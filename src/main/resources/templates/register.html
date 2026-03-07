@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MotoMeet | Register</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/auth.css">
+</head>
+<body>
+<div class="auth-shell">
+    <section class="auth-card">
+        <aside class="auth-visual">
+            <div class="brand-row">
+                <span class="brand-dot"></span>
+                <span>MOTOMEET</span>
+            </div>
+
+            <h1 class="visual-title">BUILD YOUR GARAGE.<br>MEET YOUR CREW.</h1>
+            <p class="visual-copy">Join riders nearby, share the roads you love, and keep your moto life organized.</p>
+
+            <ul class="feature-list">
+                <li><span class="feature-bullet"></span>Create a public rider profile</li>
+                <li><span class="feature-bullet"></span>Track your rides and performance</li>
+                <li><span class="feature-bullet"></span>Discover local rides and events</li>
+            </ul>
+        </aside>
+
+        <main class="auth-form-wrap">
+            <div class="top-links">
+                <a href="/login">Already have an account? Sign in</a>
+            </div>
+
+            <h2 class="form-title">Create Account</h2>
+            <p class="form-subtitle">Start your MotoMeet profile in less than a minute.</p>
+
+            <form id="registerForm" novalidate>
+                <div class="grid-2">
+                    <div class="field">
+                        <label for="firstname">First Name</label>
+                        <input id="firstname" name="firstname" type="text" placeholder="Jake" required>
+                    </div>
+
+                    <div class="field">
+                        <label for="lastname">Last Name</label>
+                        <input id="lastname" name="lastname" type="text" placeholder="Morrison" required>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label for="email">Email</label>
+                    <input id="email" name="email" type="email" placeholder="you@example.com" required>
+                </div>
+
+                <div class="grid-2">
+                    <div class="field">
+                        <label for="password">Password</label>
+                        <input id="password" name="password" type="password" placeholder="Create a password" required minlength="8">
+                    </div>
+
+                    <div class="field">
+                        <label for="confirmPassword">Confirm Password</label>
+                        <input id="confirmPassword" name="confirmPassword" type="password" placeholder="Repeat your password" required minlength="8">
+                    </div>
+                </div>
+
+                <div class="action-row">
+                    <button class="btn-primary" type="submit">Create Account</button>
+                    <a href="/login">Back to login</a>
+                </div>
+
+                <p id="registerMessage" class="msg"></p>
+            </form>
+        </main>
+    </section>
+</div>
+<script src="/js/auth.js"></script>
+</body>
+</html>
