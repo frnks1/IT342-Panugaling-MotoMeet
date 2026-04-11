@@ -38,6 +38,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 @Controller
 public class PageController {
 
+    private static final int MAX_IMAGE_URL_LENGTH = 255;
+
     private final CurrentUserService currentUserService;
     private final BikeRepository bikeRepository;
     private final FeedPostRepository feedPostRepository;
@@ -111,8 +113,8 @@ public class PageController {
         post.setOwner(user);
         post.setStory(feedPostForm.getStory().trim());
         post.setBikeName(resolveText(feedPostForm.getBikeName(), activeBike != null ? activeBike.getDisplayName() : "My Bike"));
-        post.setImageLeftUrl(resolveText(feedPostForm.getImageLeftUrl(), "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=900&q=80"));
-        post.setImageRightUrl(resolveText(feedPostForm.getImageRightUrl(), "https://images.unsplash.com/photo-1591291621164-2c6367723315?auto=format&fit=crop&w=900&q=80"));
+        post.setImageLeftUrl(normalizeImageUrl(feedPostForm.getImageLeftUrl(), "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=900&q=80"));
+        post.setImageRightUrl(normalizeImageUrl(feedPostForm.getImageRightUrl(), "https://images.unsplash.com/photo-1591291621164-2c6367723315?auto=format&fit=crop&w=900&q=80"));
         post.setLikes(0);
         post.setCheers(0);
         post.setComments(0);
@@ -164,7 +166,11 @@ public class PageController {
         rideLog.setDurationMinutes(rideForm.getDurationMinutes());
         rideLog.setAvgSpeedMph(rideForm.getAvgSpeedMph());
         rideLog.setRideDate(rideForm.getRideDate());
-        rideLog.setImageUrl(resolveText(rideForm.getImageUrl(), "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=900&q=80"));
+        String normalizedRideImage = normalizeImageUrl(rideForm.getImageUrl(), "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=900&q=80");
+        if (rideForm.getImageUrl() != null && !rideForm.getImageUrl().trim().isEmpty() && !rideForm.getImageUrl().trim().equals(normalizedRideImage)) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Image URL was too long or unsupported, so a default image was used.");
+        }
+        rideLog.setImageUrl(normalizedRideImage);
 
         rideLogRepository.save(rideLog);
         redirectAttributes.addFlashAttribute("successMessage", "Ride logged successfully.");
@@ -201,7 +207,7 @@ public class PageController {
         meetup.setMeetupDate(meetupForm.getMeetupDate());
         meetup.setMeetupTime(meetupForm.getMeetupTime());
         meetup.setDistanceMiles(meetupForm.getDistanceMiles());
-        meetup.setImageUrl(resolveText(meetupForm.getImageUrl(), "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80"));
+        meetup.setImageUrl(normalizeImageUrl(meetupForm.getImageUrl(), "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80"));
         meetup.setGoingCount(1);
 
         meetupRepository.save(meetup);
@@ -409,6 +415,21 @@ public class PageController {
             return fallback;
         }
         return value.trim();
+    }
+
+    private String normalizeImageUrl(String candidate, String fallback) {
+        if (candidate == null || candidate.trim().isEmpty()) {
+            return fallback;
+        }
+
+        String value = candidate.trim();
+
+        // Prevent oversized data URLs from causing SQL truncation errors.
+        if (value.startsWith("data:") || value.length() > MAX_IMAGE_URL_LENGTH) {
+            return fallback;
+        }
+
+        return value;
     }
 
     @ExceptionHandler(AuthenticatedUserMissingException.class)
