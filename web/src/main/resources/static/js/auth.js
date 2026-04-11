@@ -22,7 +22,15 @@ async function postJson(url, payload) {
     }
 
     if (!response.ok) {
-        throw new Error(typeof data === "string" ? data : "Request failed.");
+        if (typeof data === "string") {
+            throw new Error(data);
+        }
+
+        if (data.errors && Array.isArray(data.errors)) {
+            throw new Error(data.errors.join(". "));
+        }
+
+        throw new Error(data.message || "Request failed.");
     }
 
     return data;
@@ -33,23 +41,6 @@ function wireLoginForm() {
     if (!form) {
         return;
     }
-
-    const msg = document.getElementById("loginMessage");
-
-    form.addEventListener("submit", async (event) => {
-        event.preventDefault();
-        setMessage(msg, "", false);
-
-        const email = document.getElementById("email").value.trim();
-        const password = document.getElementById("password").value;
-
-        try {
-            await postJson("/api/v1/auth/login", { email, password });
-            setMessage(msg, "Login successful. Welcome back to MotoMeet.", true);
-        } catch (error) {
-            setMessage(msg, error.message || "Invalid credentials.", false);
-        }
-    });
 }
 
 function wireRegisterForm() {
@@ -76,9 +67,12 @@ function wireRegisterForm() {
         }
 
         try {
-            await postJson("/api/v1/auth/register", { firstname, lastname, email, password });
-            setMessage(msg, "Registration successful. You can now sign in.", true);
+            const result = await postJson("/api/v1/auth/register", { firstname, lastname, email, password });
+            setMessage(msg, result.message || "Registration successful. You can now sign in.", true);
             form.reset();
+            setTimeout(() => {
+                window.location.href = "/login?registered=true";
+            }, 900);
         } catch (error) {
             setMessage(msg, error.message || "Unable to register at the moment.", false);
         }

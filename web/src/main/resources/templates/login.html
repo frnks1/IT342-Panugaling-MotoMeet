@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -36,7 +36,7 @@
             <h2 class="form-title">Welcome Back</h2>
             <p class="form-subtitle">Sign in to continue your MotoMeet journey.</p>
 
-            <form id="loginForm" novalidate>
+            <form id="loginForm" action="/login" method="post" novalidate>
                 <div class="field">
                     <label for="email">Email</label>
                     <input id="email" name="email" type="email" placeholder="you@example.com" required>
@@ -52,7 +52,9 @@
                     <a href="/register">Create account</a>
                 </div>
 
-                <p id="loginMessage" class="msg"></p>
+                <p id="loginMessage" class="msg" th:if="${param.error}">Invalid email or password.</p>
+                <p class="msg error" th:if="${param.expired}">Session expired. Please sign in again.</p>
+                <p class="msg success" th:if="${param.logout}">You have been logged out.</p>
             </form>
         </main>
     </section>

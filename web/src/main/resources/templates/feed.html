@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MotoMeet | Feed</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<header class="topbar">
+    <div class="brand-wrap">
+        <span class="brand-icon">MM</span>
+        <div class="brand">MOTOMEET</div>
+    </div>
+    <nav>
+        <a class="nav-item active" href="/feed">Feed</a>
+        <a class="nav-item" href="/rides">Rides</a>
+        <a class="nav-item" href="/meetups">Meetups</a>
+        <a class="nav-item" href="/garage">Garage</a>
+    </nav>
+    <div class="top-actions">
+        <span class="notif">3</span>
+        <div class="avatar-pill" th:text="${avatarInitials}">RD</div>
+        <form action="/logout" method="post"><button class="ghost-btn" type="submit">Logout</button></form>
+    </div>
+</header>
+
+<main class="app-grid with-sidebar">
+    <aside class="sidebar-card">
+        <div class="profile-header"></div>
+        <div class="profile-avatar" th:text="${avatarInitials}">RD</div>
+        <div class="profile-body">
+            <h2 th:text="${fullName}">Rider Name</h2>
+            <p class="soft" th:text="${username}">@rider.name</p>
+            <p class="chip" th:if="${activeBike != null}" th:text="${activeBike.displayName}">Ducati Monster 937</p>
+            <p class="soft">Passionate about twisties and cafe culture. Built for weekend rides.</p>
+            <div class="mini-stats">
+                <div><strong th:text="${followers}">1284</strong><span>Followers</span></div>
+                <div><strong th:text="${following}">347</strong><span>Following</span></div>
+            </div>
+            <a class="side-link" href="/garage">My Garage</a>
+            <a class="side-link" href="/rides">My Rides</a>
+        </div>
+    </aside>
+
+    <section class="content-col">
+        <div class="flash success" th:if="${successMessage}" th:text="${successMessage}"></div>
+        <div class="flash error" th:if="${errorMessage}" th:text="${errorMessage}"></div>
+
+        <form class="compose-card wire" action="/feed" method="post" th:object="${feedPostForm}">
+            <div class="avatar-pill" th:text="${avatarInitials}">RD</div>
+            <div class="compose-main">
+                <textarea th:field="*{story}" placeholder="What's your ride story today?" required maxlength="1000"></textarea>
+                <div class="compose-grid">
+                    <input th:field="*{bikeName}" type="text" placeholder="Bike name">
+                    <input th:field="*{imageLeftUrl}" type="url" placeholder="Left image URL">
+                    <input th:field="*{imageRightUrl}" type="url" placeholder="Right image URL">
+                    <button class="primary-btn" type="submit">Post</button>
+                </div>
+            </div>
+        </form>
+
+        <article class="post-card wire" th:each="post : ${posts}">
+            <div class="post-meta rich">
+                <div class="user-row">
+                    <div class="avatar-pill" th:text="${avatarInitials}">RD</div>
+                    <div>
+                        <h3 th:text="${fullName}">Rider Name</h3>
+                        <p class="soft">
+                            <span class="chip small" th:text="${post.bikeName}">Honda CBR 600RR</span>
+                            <span th:text="${#temporals.format(post.createdAt, 'h:mm a')}">2h ago</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <p class="post-story" th:text="${post.story}">Story content</p>
+            <div class="post-images">
+                <img th:src="${post.imageLeftUrl}" alt="Ride image left">
+                <img th:src="${post.imageRightUrl}" alt="Ride image right">
+            </div>
+            <div class="post-stats spread">
+                <span th:text="'Flame ' + ${post.likes}">Flame 124</span>
+                <span th:text="'Shield ' + ${post.cheers}">Shield 58</span>
+                <span th:text="'Comment ' + ${post.comments}">Comment 23</span>
+                <span>Share</span>
+            </div>
+        </article>
+    </section>
+</main>
+<script src="/js/app.js"></script>
+</body>
+</html>

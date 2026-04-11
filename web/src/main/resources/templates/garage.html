@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MotoMeet | Garage</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<header class="topbar">
+    <div class="brand-wrap"><span class="brand-icon">MM</span><div class="brand">MOTOMEET</div></div>
+    <nav>
+        <a class="nav-item" href="/feed">Feed</a>
+        <a class="nav-item" href="/rides">Rides</a>
+        <a class="nav-item" href="/meetups">Meetups</a>
+        <a class="nav-item active" href="/garage">Garage</a>
+    </nav>
+    <div class="top-actions">
+        <span class="notif">3</span>
+        <div class="avatar-pill" th:text="${avatarInitials}">RD</div>
+        <form action="/logout" method="post"><button class="ghost-btn" type="submit">Logout</button></form>
+    </div>
+</header>
+
+<main class="app-grid">
+    <section class="content-col full">
+        <div class="title-row">
+            <div>
+                <h1>My Garage</h1>
+                <p class="soft" th:text="${#lists.size(bikes)} + ' bikes in your collection'">0 bikes in collection</p>
+            </div>
+            <button class="primary-btn" type="button" data-toggle-target="bike-form-wrap">+ Add Bike</button>
+        </div>
+
+        <div class="flash success" th:if="${successMessage}" th:text="${successMessage}"></div>
+        <div class="flash error" th:if="${errorMessage}" th:text="${errorMessage}"></div>
+
+        <div id="bike-form-wrap" class="collapsible-wrap">
+            <form class="form-card" action="/garage" method="post" th:object="${bikeForm}">
+                <h2>Add Bike</h2>
+                <div class="field-grid two">
+                    <input th:field="*{displayName}" type="text" placeholder="Bike name (e.g., Ducati Monster 937)" required>
+                    <input th:field="*{modelYear}" type="number" min="1950" max="2100" placeholder="Model year" required>
+                    <input th:field="*{engineCc}" type="number" min="50" placeholder="Engine (cc)" required>
+                    <input th:field="*{powerHp}" type="number" min="1" placeholder="Power (hp)" required>
+                    <input th:field="*{weightKg}" type="number" min="1" placeholder="Weight (kg)" required>
+                    <input th:field="*{topSpeedKph}" type="number" min="20" placeholder="Top speed (km/h)" required>
+                </div>
+                <button class="primary-btn" type="submit">Add Bike</button>
+            </form>
+        </div>
+
+        <div class="bike-tabs" th:if="${!#lists.isEmpty(bikes)}">
+            <form th:each="bike : ${bikes}" th:action="@{'/garage/' + ${bike.id} + '/activate'}" method="post">
+                <button type="submit" class="bike-tab" th:classappend="${bike.active} ? ' active'" th:text="${bike.modelYear + ' ' + bike.displayName}">Bike</button>
+            </form>
+        </div>
+
+        <article class="garage-card wire" th:if="${activeBike != null}">
+            <h3 th:text="${activeBike.modelYear + ' ' + activeBike.displayName}">Active Bike</h3>
+            <div class="spec-grid">
+                <div><span>Engine</span><strong th:text="${activeBike.engineCc + ' cc'}">937 cc</strong></div>
+                <div><span>Power</span><strong th:text="${activeBike.powerHp + ' hp'}">111 hp</strong></div>
+                <div><span>Weight</span><strong th:text="${activeBike.weightKg + ' kg'}">188 kg</strong></div>
+                <div><span>Top Speed</span><strong th:text="${activeBike.topSpeedKph + ' km/h'}">220 km/h</strong></div>
+            </div>
+        </article>
+
+        <div class="empty-state" th:if="${#lists.isEmpty(bikes)}">No bikes yet. Add one to start your garage.</div>
+    </section>
+</main>
+<script src="/js/app.js"></script>
+</body>
+</html>

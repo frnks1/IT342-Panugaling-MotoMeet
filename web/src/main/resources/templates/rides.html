@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MotoMeet | Rides</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<header class="topbar">
+    <div class="brand-wrap"><span class="brand-icon">MM</span><div class="brand">MOTOMEET</div></div>
+    <nav>
+        <a class="nav-item" href="/feed">Feed</a>
+        <a class="nav-item active" href="/rides">Rides</a>
+        <a class="nav-item" href="/meetups">Meetups</a>
+        <a class="nav-item" href="/garage">Garage</a>
+    </nav>
+    <div class="top-actions">
+        <span class="notif">3</span>
+        <div class="avatar-pill" th:text="${avatarInitials}">RD</div>
+        <form action="/logout" method="post"><button class="ghost-btn" type="submit">Logout</button></form>
+    </div>
+</header>
+
+<main class="app-grid">
+    <section class="content-col full">
+        <div class="title-row">
+            <div>
+                <h1>My Rides</h1>
+                <p class="soft" th:text="${#lists.size(rides)} + ' rides logged this month'">3 rides logged this month</p>
+            </div>
+            <button class="primary-btn" type="button" data-toggle-target="ride-form-wrap">+ Log Ride</button>
+        </div>
+
+        <div class="flash success" th:if="${successMessage}" th:text="${successMessage}"></div>
+        <div class="flash error" th:if="${errorMessage}" th:text="${errorMessage}"></div>
+
+        <section class="stats-grid">
+            <div class="stat-card"><strong th:text="${totalMiles + ' MI'}">267 MI</strong><span>Total Miles</span></div>
+            <div class="stat-card"><strong th:text="${(totalMinutes / 60) + 'H ' + (totalMinutes % 60) + 'M'}">7H 25M</strong><span>Ride Time</span></div>
+            <div class="stat-card"><strong th:text="${totalElevationFeet + ' FT'}">7,880 FT</strong><span>Elevation</span></div>
+        </section>
+
+        <div class="segmented-control">
+            <button class="seg-btn active" type="button">Past Rides</button>
+            <button class="seg-btn" type="button" data-toggle-target="ride-form-wrap">Log New Ride</button>
+        </div>
+
+        <div id="ride-form-wrap" class="collapsible-wrap">
+            <form class="form-card" action="/rides" method="post" th:object="${rideForm}">
+                <h2>Log New Ride</h2>
+                <div class="field-grid two">
+                    <input th:field="*{title}" type="text" placeholder="Ride title" required>
+                    <input th:field="*{route}" type="text" placeholder="Route" required>
+                    <input th:field="*{distanceMiles}" type="number" min="1" placeholder="Distance (mi)" required>
+                    <input th:field="*{durationMinutes}" type="number" min="1" placeholder="Duration (minutes)" required>
+                    <input th:field="*{avgSpeedMph}" type="number" min="1" placeholder="Average speed (mph)" required>
+                    <input th:field="*{rideDate}" type="date" required>
+                </div>
+                <input th:field="*{imageUrl}" type="url" placeholder="Image URL (optional)">
+                <button class="primary-btn" type="submit">Save Ride</button>
+            </form>
+        </div>
+
+        <article class="list-card ride" th:each="ride : ${rides}">
+            <img th:src="${ride.imageUrl}" alt="Ride image">
+            <div class="list-content">
+                <div class="list-head">
+                    <h3 th:text="${ride.title}">Mulholland Sunday Morning</h3>
+                    <span class="soft" th:text="${#temporals.format(ride.rideDate, 'MMM d, yyyy')}">Dec 8, 2024</span>
+                </div>
+                <p class="soft" th:text="${ride.route}">Calabasas -> Mulholland -> Malibu -> PCH</p>
+                <div class="metrics boxed">
+                    <span th:text="${ride.distanceMiles + ' mi'}">87 mi</span>
+                    <span th:text="${(ride.durationMinutes / 60) + 'h ' + (ride.durationMinutes % 60) + 'min'}">2h 15min</span>
+                    <span th:text="${ride.avgSpeedMph + ' mph'}">42 mph</span>
+                </div>
+            </div>
+        </article>
+
+        <div class="empty-state" th:if="${#lists.isEmpty(rides)}">No rides logged yet.</div>
+    </section>
+</main>
+<script src="/js/app.js"></script>
+</body>
+</html>

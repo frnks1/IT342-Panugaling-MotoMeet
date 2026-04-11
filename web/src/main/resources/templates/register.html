@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -40,12 +40,12 @@
                 <div class="grid-2">
                     <div class="field">
                         <label for="firstname">First Name</label>
-                        <input id="firstname" name="firstname" type="text" placeholder="Jake" required>
+                        <input id="firstname" name="firstname" type="text" placeholder="First name" required>
                     </div>
 
                     <div class="field">
                         <label for="lastname">Last Name</label>
-                        <input id="lastname" name="lastname" type="text" placeholder="Morrison" required>
+                        <input id="lastname" name="lastname" type="text" placeholder="Last name" required>
                     </div>
                 </div>
 
@@ -72,6 +72,7 @@
                 </div>
 
                 <p id="registerMessage" class="msg"></p>
+                <p class="msg success" th:if="${param.registered}">Registration successful. Please sign in.</p>
             </form>
         </main>
     </section>
