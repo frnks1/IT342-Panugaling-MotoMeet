@@ -17,6 +17,7 @@ import edu.cit.panugaling.motomeet.service.AuthenticatedUserMissingException;
 import edu.cit.panugaling.motomeet.service.CurrentUserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -45,19 +46,22 @@ public class PageController {
     private final FeedPostRepository feedPostRepository;
     private final RideLogRepository rideLogRepository;
     private final MeetupRepository meetupRepository;
+    private final Environment environment;
 
     public PageController(
             CurrentUserService currentUserService,
             BikeRepository bikeRepository,
             FeedPostRepository feedPostRepository,
             RideLogRepository rideLogRepository,
-            MeetupRepository meetupRepository
+            MeetupRepository meetupRepository,
+            Environment environment
     ) {
         this.currentUserService = currentUserService;
         this.bikeRepository = bikeRepository;
         this.feedPostRepository = feedPostRepository;
         this.rideLogRepository = rideLogRepository;
         this.meetupRepository = meetupRepository;
+        this.environment = environment;
     }
 
     @GetMapping("/")
@@ -209,6 +213,11 @@ public class PageController {
         meetup.setDistanceMiles(meetupForm.getDistanceMiles());
         meetup.setImageUrl(normalizeImageUrl(meetupForm.getImageUrl(), "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80"));
         meetup.setGoingCount(1);
+        meetup.setDescription("Meetup ride at " + meetupForm.getLocation().trim());
+        meetup.setMaxParticipants(25);
+        meetup.setOrganizerName(user.getFirstname() + " " + user.getLastname());
+        meetup.setScheduledAt(LocalDateTime.of(meetupForm.getMeetupDate(), meetupForm.getMeetupTime()));
+        meetup.setCreatedAt(LocalDateTime.now());
 
         meetupRepository.save(meetup);
         redirectAttributes.addFlashAttribute("successMessage", "Meetup created successfully.");
@@ -281,7 +290,9 @@ public class PageController {
     }
 
     private void setupBaseModel(Model model, User user, String activeTab) {
-        ensureDemoData(user);
+        if (!environment.matchesProfiles("supabase")) {
+            ensureDemoData(user);
+        }
 
         List<Bike> bikes = bikeRepository.findByOwnerOrderByActiveDescDisplayNameAsc(user);
         Bike activeBike = bikes.stream().filter(Bike::isActive).findFirst().orElse(null);
@@ -369,6 +380,11 @@ public class PageController {
             meetupOne.setDistanceMiles(4.2);
             meetupOne.setImageUrl("https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=1200&q=80");
             meetupOne.setGoingCount(3);
+            meetupOne.setDescription("Cafe racer breakfast run.");
+            meetupOne.setMaxParticipants(25);
+            meetupOne.setOrganizerName(user.getFirstname() + " " + user.getLastname());
+            meetupOne.setScheduledAt(LocalDateTime.of(meetupOne.getMeetupDate(), meetupOne.getMeetupTime()));
+            meetupOne.setCreatedAt(LocalDateTime.now().minusDays(1));
 
             Meetup meetupTwo = new Meetup();
             meetupTwo.setOwner(user);
@@ -379,6 +395,11 @@ public class PageController {
             meetupTwo.setDistanceMiles(8.7);
             meetupTwo.setImageUrl("https://images.unsplash.com/photo-1511882150382-421056c89033?auto=format&fit=crop&w=1200&q=80");
             meetupTwo.setGoingCount(7);
+            meetupTwo.setDescription("Coastal sunset group ride.");
+            meetupTwo.setMaxParticipants(30);
+            meetupTwo.setOrganizerName(user.getFirstname() + " " + user.getLastname());
+            meetupTwo.setScheduledAt(LocalDateTime.of(meetupTwo.getMeetupDate(), meetupTwo.getMeetupTime()));
+            meetupTwo.setCreatedAt(LocalDateTime.now().minusDays(1));
 
             meetupRepository.saveAll(List.of(meetupOne, meetupTwo));
         }

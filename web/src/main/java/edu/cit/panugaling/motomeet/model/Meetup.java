@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 @Entity
@@ -16,35 +17,48 @@ public class Meetup {
     private Long id;
 
     @NotBlank
-    @Column(nullable = false)
+    @Column(nullable = true)
     private String title;
 
     @NotBlank
-    @Column(nullable = false)
+    @Column(nullable = true)
     private String location;
 
-    @NotNull
-    @Column(nullable = false)
+    @Column(nullable = true)
+    private String description;
+
+    @Column(nullable = true)
+    private Integer maxParticipants;
+
+    @Column(nullable = true)
+    private String organizerName;
+
+    @Column(nullable = true)
+    private LocalDateTime scheduledAt;
+
+    @Column(nullable = true)
+    private LocalDateTime createdAt;
+
+    @Column(nullable = true)
     private LocalDate meetupDate;
 
-    @NotNull
-    @Column(nullable = false)
+    @Column(nullable = true)
     private LocalTime meetupTime;
 
     @NotNull
     @DecimalMin("0.1")
-    @Column(nullable = false)
+    @Column(nullable = true)
     private Double distanceMiles;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private String imageUrl;
 
     @NotNull
-    @Column(nullable = false)
+    @Column(nullable = true)
     private Integer goingCount;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "owner_id", nullable = false)
+    @JoinColumn(name = "owner_id")
     private User owner;
 
     public Meetup() {
@@ -72,6 +86,46 @@ public class Meetup {
 
     public void setLocation(String location) {
         this.location = location;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public Integer getMaxParticipants() {
+        return maxParticipants;
+    }
+
+    public void setMaxParticipants(Integer maxParticipants) {
+        this.maxParticipants = maxParticipants;
+    }
+
+    public String getOrganizerName() {
+        return organizerName;
+    }
+
+    public void setOrganizerName(String organizerName) {
+        this.organizerName = organizerName;
+    }
+
+    public LocalDateTime getScheduledAt() {
+        return scheduledAt;
+    }
+
+    public void setScheduledAt(LocalDateTime scheduledAt) {
+        this.scheduledAt = scheduledAt;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 
     public LocalDate getMeetupDate() {
