@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notifications - MotoMeet</title>
+    <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<header class="topbar">
+    <div class="brand-wrap">
+        <span class="brand-icon">MM</span>
+        <div class="brand">MOTOMEET</div>
+    </div>
+    <nav>
+        <a class="nav-item" href="/feed">Feed</a>
+        <a class="nav-item" href="/rides">Rides</a>
+        <a class="nav-item" href="/meetups">Meetups</a>
+        <a class="nav-item" href="/garage">Garage</a>
+        <a class="nav-item" href="/marketplace">Marketplace</a>
+    </nav>
+    <div class="top-actions">
+        <a class="top-action-link" href="/notifications" aria-label="Open notifications">
+            <span class="notif-icon">🔔</span>
+            <span class="notif-badge" th:if="${unreadCount > 0}" th:text="${unreadCount}">3</span>
+        </a>
+        <a class="profile-link" href="/profile" aria-label="Open profile">
+            <div class="avatar-pill" th:text="${avatarInitials}">JB</div>
+        </a>
+        <form action="/logout" method="post"><button class="ghost-btn" type="submit">Logout</button></form>
+    </div>
+</header>
+
+<main class="notifications-layout">
+    <section class="page-hero">
+        <div>
+            <h1>Notifications</h1>
+            <p>Catch updates for marketplace activity, rides, and meetup alerts.</p>
+        </div>
+        <div class="market-chip" th:if="${unreadCount > 0}" th:text="${unreadCount + ' unread'}">0 unread</div>
+    </section>
+
+    <div th:if="${notifications.isEmpty()}" class="empty-state">
+        <p>No notifications yet.</p>
+        <p>Stay tuned for updates.</p>
+    </div>
+
+    <div th:unless="${notifications.isEmpty()}" class="notification-list">
+        <div th:each="notification : ${notifications}" class="notification-card" th:classappend="${notification.isRead ? ' read' : ' unread'}">
+            <div>
+                <div class="notification-tag" th:text="${notification.type}">update</div>
+                <h3 th:text="${notification.message}">Notification message</h3>
+                <p class="soft" th:text="${#temporals.format(notification.createdAt, 'MMM dd, yyyy HH:mm')}">Time</p>
+            </div>
+            <div th:if="!${notification.isRead}">
+                <form method="post" th:action="@{/notifications/{id}/mark-read(id=${notification.id})}">
+                    <button type="submit" class="secondary-btn">Mark as read</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script src="/js/app.js"></script>
+</body>
+</html>

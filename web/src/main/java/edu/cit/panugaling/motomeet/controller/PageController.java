@@ -4,15 +4,20 @@ import edu.cit.panugaling.motomeet.dto.BikeForm;
 import edu.cit.panugaling.motomeet.dto.FeedPostForm;
 import edu.cit.panugaling.motomeet.dto.MeetupForm;
 import edu.cit.panugaling.motomeet.dto.RideForm;
+import edu.cit.panugaling.motomeet.dto.MarketplaceItemForm;
 import edu.cit.panugaling.motomeet.model.Bike;
 import edu.cit.panugaling.motomeet.model.FeedPost;
 import edu.cit.panugaling.motomeet.model.Meetup;
 import edu.cit.panugaling.motomeet.model.RideLog;
 import edu.cit.panugaling.motomeet.model.User;
+import edu.cit.panugaling.motomeet.model.MarketplaceItem;
+import edu.cit.panugaling.motomeet.model.Notification;
 import edu.cit.panugaling.motomeet.repository.BikeRepository;
 import edu.cit.panugaling.motomeet.repository.FeedPostRepository;
 import edu.cit.panugaling.motomeet.repository.MeetupRepository;
 import edu.cit.panugaling.motomeet.repository.RideLogRepository;
+import edu.cit.panugaling.motomeet.repository.MarketplaceItemRepository;
+import edu.cit.panugaling.motomeet.repository.NotificationRepository;
 import edu.cit.panugaling.motomeet.service.AuthenticatedUserMissingException;
 import edu.cit.panugaling.motomeet.service.CurrentUserService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -47,6 +52,8 @@ public class PageController {
     private final RideLogRepository rideLogRepository;
     private final MeetupRepository meetupRepository;
     private final Environment environment;
+    private final MarketplaceItemRepository marketplaceItemRepository;
+    private final NotificationRepository notificationRepository;
 
     public PageController(
             CurrentUserService currentUserService,
@@ -54,7 +61,9 @@ public class PageController {
             FeedPostRepository feedPostRepository,
             RideLogRepository rideLogRepository,
             MeetupRepository meetupRepository,
-            Environment environment
+            Environment environment,
+            MarketplaceItemRepository marketplaceItemRepository,
+            NotificationRepository notificationRepository
     ) {
         this.currentUserService = currentUserService;
         this.bikeRepository = bikeRepository;
@@ -62,6 +71,8 @@ public class PageController {
         this.rideLogRepository = rideLogRepository;
         this.meetupRepository = meetupRepository;
         this.environment = environment;
+        this.marketplaceItemRepository = marketplaceItemRepository;
+        this.notificationRepository = notificationRepository;
     }
 
     @GetMapping("/")
@@ -232,6 +243,17 @@ public class PageController {
         return "garage";
     }
 
+    @GetMapping("/profile")
+    public String profilePage(Authentication authentication, Model model) {
+        User user = currentUserService.getRequiredUser(authentication);
+        setupBaseModel(model, user, "profile");
+        model.addAttribute("recentPosts", feedPostRepository.findByOwnerOrderByCreatedAtDesc(user));
+        model.addAttribute("recentRides", rideLogRepository.findByOwnerOrderByRideDateDesc(user));
+        model.addAttribute("recentMeetups", meetupRepository.findByOwnerOrderByMeetupDateAscMeetupTimeAsc(user));
+        model.addAttribute("unreadCount", countUnreadNotifications(user));
+        return "profile";
+    }
+
     @PostMapping("/garage")
     public String addBike(
             Authentication authentication,
@@ -310,6 +332,7 @@ public class PageController {
 
         int followers = 1200 + rideLogRepository.findByOwnerOrderByRideDateDesc(user).size() * 24;
         int following = 300 + meetupRepository.findByOwnerOrderByMeetupDateAscMeetupTimeAsc(user).size() * 7;
+        long unreadCount = countUnreadNotifications(user);
 
         model.addAttribute("activeTab", activeTab);
         model.addAttribute("fullName", user.getFirstname() + " " + user.getLastname());
@@ -317,8 +340,13 @@ public class PageController {
         model.addAttribute("avatarInitials", initials);
         model.addAttribute("followers", followers);
         model.addAttribute("following", following);
+        model.addAttribute("unreadCount", unreadCount);
         model.addAttribute("bikes", bikes);
         model.addAttribute("activeBike", activeBike);
+    }
+
+    private long countUnreadNotifications(User user) {
+        return notificationRepository.countByRecipientAndIsReadFalse(user);
     }
 
     private void ensureDemoData(User user) {
@@ -429,6 +457,129 @@ public class PageController {
 
             feedPostRepository.saveAll(List.of(postOne, postTwo));
         }
+
+        if (marketplaceItemRepository.findBySellerOrderByCreatedAtDesc(user).isEmpty()) {
+            MarketplaceItem itemOne = new MarketplaceItem();
+            itemOne.setSeller(user);
+            itemOne.setTitle("Ducati tank bag");
+            itemOne.setDescription("Lightly used magnetic tank bag with rain cover.");
+            itemOne.setPrice(1850.0);
+            itemOne.setCategory("Gear");
+            itemOne.setImageUrl("https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&w=900&q=80");
+            itemOne.setStatus("available");
+            itemOne.setCreatedAt(LocalDateTime.now().minusDays(3));
+            itemOne.setUpdatedAt(LocalDateTime.now().minusDays(3));
+
+            MarketplaceItem itemTwo = new MarketplaceItem();
+            itemTwo.setSeller(user);
+            itemTwo.setTitle("LED auxiliary lights");
+            itemTwo.setDescription("Pair of waterproof LED driving lights for night rides.");
+            itemTwo.setPrice(3200.0);
+            itemTwo.setCategory("Parts");
+            itemTwo.setImageUrl("https://images.unsplash.com/photo-1454496522488-7a8e488e8606?auto=format&fit=crop&w=900&q=80");
+            itemTwo.setStatus("available");
+            itemTwo.setCreatedAt(LocalDateTime.now().minusDays(1));
+            itemTwo.setUpdatedAt(LocalDateTime.now().minusDays(1));
+
+            marketplaceItemRepository.saveAll(List.of(itemOne, itemTwo));
+        }
+
+        if (notificationRepository.findByRecipientOrderByCreatedAtDesc(user).isEmpty()) {
+            Notification notificationOne = new Notification("ride_update", "Your ride log reached 100 miles this week.", user);
+            Notification notificationTwo = new Notification("marketplace", "Someone viewed your Ducati tank bag listing.", user);
+            Notification notificationThree = new Notification("meetup", "A new meetup matching your route preferences was posted.", user);
+            notificationRepository.saveAll(List.of(notificationOne, notificationTwo, notificationThree));
+        }
+    }
+
+    @GetMapping("/marketplace")
+    public String marketplacePage(Authentication authentication, Model model) {
+        User user = currentUserService.getRequiredUser(authentication);
+        setupBaseModel(model, user, "marketplace");
+        model.addAttribute("marketplaceItemForm", new MarketplaceItemForm());
+        model.addAttribute("items", marketplaceItemRepository.findByStatusOrderByCreatedAtDesc("available"));
+        return "marketplace";
+    }
+
+    @PostMapping("/marketplace")
+    public String createMarketplaceItem(
+            Authentication authentication,
+            @Valid @ModelAttribute MarketplaceItemForm marketplaceItemForm,
+            BindingResult bindingResult,
+            RedirectAttributes redirectAttributes
+    ) {
+        User user = currentUserService.getRequiredUser(authentication);
+
+        if (bindingResult.hasErrors()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Please provide valid item details.");
+            return "redirect:/marketplace";
+        }
+
+        MarketplaceItem item = new MarketplaceItem();
+        item.setSeller(user);
+        item.setTitle(marketplaceItemForm.getTitle().trim());
+        item.setDescription(marketplaceItemForm.getDescription().trim());
+        item.setPrice(marketplaceItemForm.getPrice());
+        item.setCategory(marketplaceItemForm.getCategory());
+        item.setImageUrl(normalizeImageUrl(marketplaceItemForm.getImageUrl(), 
+            "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=900&q=80"));
+        item.setStatus("available");
+        item.setCreatedAt(LocalDateTime.now());
+        item.setUpdatedAt(LocalDateTime.now());
+
+        marketplaceItemRepository.save(item);
+
+        // Create notification for other users
+        Notification notification = new Notification("item_listed", 
+            user.getFirstname() + " listed a new item: " + item.getTitle(), user);
+        notificationRepository.save(notification);
+
+        redirectAttributes.addFlashAttribute("successMessage", "Item listed successfully.");
+        return "redirect:/marketplace";
+    }
+
+    @GetMapping("/marketplace/{id}")
+    public String marketplaceItemDetail(
+            @PathVariable Long id,
+            Model model,
+            Authentication authentication
+    ) {
+        User user = currentUserService.getRequiredUser(authentication);
+        setupBaseModel(model, user, "marketplace");
+        
+        MarketplaceItem item = marketplaceItemRepository.findById(id).orElse(null);
+        if (item == null) {
+            return "redirect:/marketplace";
+        }
+        
+        model.addAttribute("item", item);
+        return "marketplace-detail";
+    }
+
+    @GetMapping("/notifications")
+    public String notificationsPage(Authentication authentication, Model model) {
+        User user = currentUserService.getRequiredUser(authentication);
+        setupBaseModel(model, user, "notifications");
+        
+        List<Notification> notifications = notificationRepository.findByRecipientOrderByCreatedAtDesc(user);
+        long unreadCount = notificationRepository.countByRecipientAndIsReadFalse(user);
+        
+        model.addAttribute("notifications", notifications);
+        model.addAttribute("unreadCount", unreadCount);
+        return "notifications";
+    }
+
+    @PostMapping("/notifications/{id}/mark-read")
+    public String markNotificationAsRead(
+            @PathVariable Long id,
+            RedirectAttributes redirectAttributes
+    ) {
+        Notification notification = notificationRepository.findById(id).orElse(null);
+        if (notification != null) {
+            notification.setIsRead(true);
+            notificationRepository.save(notification);
+        }
+        return "redirect:/notifications";
     }
 
     private String resolveText(String value, String fallback) {

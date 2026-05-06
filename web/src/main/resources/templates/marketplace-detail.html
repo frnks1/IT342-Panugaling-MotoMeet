@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Item Details - MotoMeet</title>
+    <link rel="stylesheet" href="/css/app.css">
+    <style>
+        .item-detail-container {
+            max-width: 900px;
+            margin: 20px auto;
+            padding: 0 20px;
+        }
+        .item-detail {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .item-image-large {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+            object-fit: cover;
+        }
+        .item-details-info h1 {
+            margin-bottom: 10px;
+        }
+        .item-price-large {
+            font-size: 32px;
+            font-weight: bold;
+            color: #d97706;
+            margin-bottom: 15px;
+        }
+        .item-detail-row {
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .detail-label {
+            font-weight: bold;
+            color: #666;
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+        .detail-value {
+            font-size: 16px;
+        }
+        .seller-info {
+            background: #f9fafb;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .seller-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .contact-btn {
+            background: #d97706;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+            margin-top: 10px;
+        }
+        .contact-btn:hover {
+            background: #b45309;
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #d97706;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        @media (max-width: 768px) {
+            .item-detail {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="nav-container">
+            <a href="/" class="nav-logo">🏍️ MotoMeet</a>
+            <ul class="nav-menu">
+                <li><a href="/feed">Feed</a></li>
+                <li><a href="/rides">Rides</a></li>
+                <li><a href="/meetups">Meetups</a></li>
+                <li><a href="/garage">Garage</a></li>
+                <li><a href="/marketplace" class="active">Marketplace</a></li>
+                <li><a href="/notifications">Notifications</a></li>
+                <li><a href="/logout">Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="item-detail-container">
+        <a href="/marketplace" class="back-link">← Back to Marketplace</a>
+
+        <div class="item-detail" th:if="${item}">
+            <div>
+                <img th:src="${item.imageUrl}" alt="Item image" class="item-image-large">
+            </div>
+
+            <div class="item-details-info">
+                <h1 th:text="${item.title}"></h1>
+                <div class="item-price-large" th:text="'$' + ${#numbers.formatDecimal(item.price, 0, 2)}"></div>
+
+                <div class="item-detail-row">
+                    <div class="detail-label">Category</div>
+                    <div class="detail-value" th:text="${item.category}"></div>
+                </div>
+
+                <div class="item-detail-row">
+                    <div class="detail-label">Status</div>
+                    <div class="detail-value" th:text="${item.status}"></div>
+                </div>
+
+                <div class="item-detail-row">
+                    <div class="detail-label">Listed on</div>
+                    <div class="detail-value" th:text="${#dates.format(item.createdAt, 'MMM dd, yyyy')}"></div>
+                </div>
+
+                <div class="item-detail-row">
+                    <div class="detail-label">Description</div>
+                    <div class="detail-value" th:text="${item.description}"></div>
+                </div>
+
+                <div class="seller-info">
+                    <div class="seller-name" th:text="${item.seller.firstname} + ' ' + ${item.seller.lastname}"></div>
+                    <div class="detail-label">Seller</div>
+                    <button class="contact-btn" onclick="alert('Contact seller: ' + document.querySelector('.seller-name').textContent)">Contact Seller</button>
+                </div>
+            </div>
+        </div>
+
+        <div th:if="!${item}" style="text-align:center; padding: 40px;">
+            <p>Item not found.</p>
+            <a href="/marketplace" class="back-link">Back to Marketplace</a>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2026 MotoMeet. All rights reserved.</p>
+    </footer>
+</body>
+</html>

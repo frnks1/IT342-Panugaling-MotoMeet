@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marketplace - MotoMeet</title>
+    <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<header class="topbar">
+    <div class="brand-wrap">
+        <span class="brand-icon">MM</span>
+        <div class="brand">MOTOMEET</div>
+    </div>
+    <nav>
+        <a class="nav-item" href="/feed">Feed</a>
+        <a class="nav-item" href="/rides">Rides</a>
+        <a class="nav-item" href="/meetups">Meetups</a>
+        <a class="nav-item" href="/garage">Garage</a>
+        <a class="nav-item active" href="/marketplace">Marketplace</a>
+    </nav>
+    <div class="top-actions">
+        <a class="top-action-link" href="/notifications" aria-label="Open notifications">
+            <span class="notif-icon">🔔</span>
+            <span class="notif-badge" th:if="${unreadCount > 0}" th:text="${unreadCount}">3</span>
+        </a>
+        <a class="profile-link" href="/profile" aria-label="Open profile">
+            <div class="avatar-pill" th:text="${avatarInitials}">JB</div>
+        </a>
+        <form action="/logout" method="post"><button class="ghost-btn" type="submit">Logout</button></form>
+    </div>
+</header>
+
+<main class="marketplace-layout">
+    <div th:if="${successMessage}" class="flash success" th:text="${successMessage}"></div>
+    <div th:if="${errorMessage}" class="flash error" th:text="${errorMessage}"></div>
+
+    <section class="page-hero">
+        <div>
+            <h1>Marketplace</h1>
+            <p>Buy and sell motorcycle parts, riding gear, and accessories from the community.</p>
+        </div>
+        <button type="button" class="listing-toggle" onclick="document.getElementById('listingForm').classList.toggle('open')">+ List Item</button>
+    </section>
+
+    <section id="listingForm" class="listing-form sidebar-card">
+        <h2>List New Item</h2>
+        <form method="post" th:action="@{/marketplace}">
+            <div class="form-grid">
+                <div>
+                    <label class="field-label" for="title">Title *</label>
+                    <input type="text" id="title" name="title" required>
+                </div>
+                <div>
+                    <label class="field-label" for="category">Category *</label>
+                    <select id="category" name="category" required>
+                        <option value="">Select a category</option>
+                        <option value="Parts">Bike Parts</option>
+                        <option value="Accessories">Accessories</option>
+                        <option value="Gear">Riding Gear</option>
+                        <option value="Tools">Tools</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="full">
+                    <label class="field-label" for="description">Description *</label>
+                    <textarea id="description" name="description" required></textarea>
+                </div>
+                <div>
+                    <label class="field-label" for="price">Price ($) *</label>
+                    <input type="number" id="price" name="price" step="0.01" min="0" required>
+                </div>
+                <div>
+                    <label class="field-label" for="imageUrl">Image URL</label>
+                    <input type="text" id="imageUrl" name="imageUrl">
+                </div>
+            </div>
+            <div class="action-row">
+                <button type="submit" class="primary-btn">List Item</button>
+                <button type="button" class="secondary-btn" onclick="document.getElementById('listingForm').classList.remove('open')">Cancel</button>
+            </div>
+        </form>
+    </section>
+
+    <section>
+        <div class="page-hero" style="margin-top: 18px;">
+            <div>
+                <h2>Available Items</h2>
+            </div>
+        </div>
+
+        <div th:if="${items.isEmpty()}" class="empty-state">
+            <p>No items available in the marketplace.</p>
+        </div>
+
+        <div class="marketplace-grid" th:unless="${items.isEmpty()}">
+            <a th:each="item : ${items}" class="market-card" th:href="@{/marketplace/{id}(id=${item.id})}">
+                <img th:src="${item.imageUrl}" alt="Item image">
+                <div class="market-card-body">
+                    <div class="market-price" th:text="'PHP ' + ${#numbers.formatDecimal(item.price, 1, 0)}">PHP 0</div>
+                    <h3 th:text="${item.title}">Item title</h3>
+                    <p class="soft" th:text="${item.description}">Item description</p>
+                    <div class="market-meta">
+                        <span class="market-chip" th:text="${item.category}">Parts</span>
+                        <span class="market-chip" th:text="${item.seller.firstname + ' ' + item.seller.lastname}">Seller</span>
+                    </div>
+                    <div class="market-status available" th:text="${item.status}">available</div>
+                </div>
+            </a>
+        </div>
+    </section>
+</main>
+
+<script src="/js/app.js"></script>
+</body>
+</html>
