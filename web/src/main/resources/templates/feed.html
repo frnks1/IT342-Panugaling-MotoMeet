@@ -72,9 +72,9 @@
         <article class="post-card wire" th:each="post : ${posts}">
             <div class="post-meta rich">
                 <div class="user-row">
-                    <div class="avatar-pill" th:text="${avatarInitials}">RD</div>
+                    <div class="avatar-pill" th:text="${post.owner.firstname.substring(0,1) + post.owner.lastname.substring(0,1)}">RD</div>
                     <div>
-                        <h3 th:text="${fullName}">Rider Name</h3>
+                        <h3 th:text="${post.owner.firstname + ' ' + post.owner.lastname}">Rider Name</h3>
                         <p class="soft">
                             <span class="chip small" th:text="${post.bikeName}">Honda CBR 600RR</span>
                             <span th:text="${#temporals.format(post.createdAt, 'h:mm a')}">2h ago</span>
@@ -88,10 +88,26 @@
                 <img th:src="${post.imageRightUrl}" alt="Ride image right">
             </div>
             <div class="post-stats spread">
-                <span th:text="'Flame ' + ${post.likes}">Flame 124</span>
-                <span th:text="'Shield ' + ${post.cheers}">Shield 58</span>
-                <span th:text="'Comment ' + ${post.comments}">Comment 23</span>
-                <span>Share</span>
+                <form method="post" th:action="@{/feed/{id}/like(id=${post.id})}">
+                    <button class="secondary-btn" type="submit" th:text="${'Like ' + post.likes}">Like 124</button>
+                </form>
+                <a class="secondary-btn" th:href="${'#comment-' + post.id}" th:text="${'Comment ' + post.comments}">Comment 23</a>
+                <form method="post" th:action="@{/feed/{id}/share(id=${post.id})}">
+                    <button class="secondary-btn" type="submit" th:text="${'Share ' + post.cheers}">Share 58</button>
+                </form>
+            </div>
+
+            <form class="compose-grid" style="margin-top: 14px; grid-template-columns: 1fr auto;" method="post" th:action="@{/feed/{id}/comment(id=${post.id})}">
+                <input th:id="${'comment-' + post.id}" type="text" name="message" placeholder="Write a comment..." required>
+                <button class="primary-btn" type="submit">Comment</button>
+            </form>
+
+            <div class="item-section" th:if="${commentsByPost != null and commentsByPost[post.id] != null and !commentsByPost[post.id].isEmpty()}" style="margin-top: 16px;">
+                <div class="section-label">Recent comments</div>
+                <div class="soft" th:each="comment : ${commentsByPost[post.id]}" style="margin-bottom: 8px;">
+                    <strong th:text="${comment.author.firstname + ' ' + comment.author.lastname}">Commenter</strong>
+                    <span th:text="${': ' + comment.message}">: Nice ride</span>
+                </div>
             </div>
         </article>
     </section>

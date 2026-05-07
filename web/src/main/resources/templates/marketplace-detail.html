@@ -110,7 +110,7 @@
     <div class="item-detail-container">
         <a href="/marketplace" class="back-link">← Back to Marketplace</a>
 
-        <div class="item-detail" th:if="${item}">
+        <div class="item-detail" th:if="${item != null}">
             <div>
                 <img th:src="${item.imageUrl}" alt="Item image" class="item-image-large">
             </div>
@@ -131,7 +131,7 @@
 
                 <div class="item-detail-row">
                     <div class="detail-label">Listed on</div>
-                    <div class="detail-value" th:text="${#dates.format(item.createdAt, 'MMM dd, yyyy')}"></div>
+                    <div class="detail-value" th:text="${#temporals.format(item.createdAt, 'MMM dd, yyyy')}"></div>
                 </div>
 
                 <div class="item-detail-row">
@@ -140,14 +140,14 @@
                 </div>
 
                 <div class="seller-info">
-                    <div class="seller-name" th:text="${item.seller.firstname} + ' ' + ${item.seller.lastname}"></div>
+                    <div class="seller-name" th:text="${item.seller.firstname + ' ' + item.seller.lastname}"></div>
                     <div class="detail-label">Seller</div>
                     <button class="contact-btn" onclick="alert('Contact seller: ' + document.querySelector('.seller-name').textContent)">Contact Seller</button>
                 </div>
             </div>
         </div>
 
-        <div th:if="!${item}" style="text-align:center; padding: 40px;">
+        <div th:if="${item == null}" style="text-align:center; padding: 40px;">
             <p>Item not found.</p>
             <a href="/marketplace" class="back-link">Back to Marketplace</a>
         </div>

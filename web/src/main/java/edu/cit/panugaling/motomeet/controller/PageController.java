@@ -2,27 +2,33 @@ package edu.cit.panugaling.motomeet.controller;
 
 import edu.cit.panugaling.motomeet.dto.BikeForm;
 import edu.cit.panugaling.motomeet.dto.FeedPostForm;
+import edu.cit.panugaling.motomeet.dto.MarketplaceItemForm;
 import edu.cit.panugaling.motomeet.dto.MeetupForm;
 import edu.cit.panugaling.motomeet.dto.RideForm;
-import edu.cit.panugaling.motomeet.dto.MarketplaceItemForm;
 import edu.cit.panugaling.motomeet.model.Bike;
+import edu.cit.panugaling.motomeet.model.Comment;
 import edu.cit.panugaling.motomeet.model.FeedPost;
+import edu.cit.panugaling.motomeet.model.MarketplaceItem;
 import edu.cit.panugaling.motomeet.model.Meetup;
+import edu.cit.panugaling.motomeet.model.Notification;
 import edu.cit.panugaling.motomeet.model.RideLog;
 import edu.cit.panugaling.motomeet.model.User;
-import edu.cit.panugaling.motomeet.model.MarketplaceItem;
-import edu.cit.panugaling.motomeet.model.Notification;
 import edu.cit.panugaling.motomeet.repository.BikeRepository;
+import edu.cit.panugaling.motomeet.repository.CommentRepository;
 import edu.cit.panugaling.motomeet.repository.FeedPostRepository;
-import edu.cit.panugaling.motomeet.repository.MeetupRepository;
-import edu.cit.panugaling.motomeet.repository.RideLogRepository;
 import edu.cit.panugaling.motomeet.repository.MarketplaceItemRepository;
+import edu.cit.panugaling.motomeet.repository.MeetupRepository;
 import edu.cit.panugaling.motomeet.repository.NotificationRepository;
+import edu.cit.panugaling.motomeet.repository.RideLogRepository;
+import edu.cit.panugaling.motomeet.repository.UserRepository;
 import edu.cit.panugaling.motomeet.service.AuthenticatedUserMissingException;
 import edu.cit.panugaling.motomeet.service.CurrentUserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.core.env.Environment;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -31,15 +37,15 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.time.LocalDate;
-import java.time.LocalTime;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.HashMap;
 import java.util.List;
-
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
+import java.util.Map;
 
 @Controller
 public class PageController {
@@ -48,31 +54,40 @@ public class PageController {
 
     private final CurrentUserService currentUserService;
     private final BikeRepository bikeRepository;
+    private final CommentRepository commentRepository;
     private final FeedPostRepository feedPostRepository;
     private final RideLogRepository rideLogRepository;
     private final MeetupRepository meetupRepository;
     private final Environment environment;
     private final MarketplaceItemRepository marketplaceItemRepository;
     private final NotificationRepository notificationRepository;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public PageController(
             CurrentUserService currentUserService,
             BikeRepository bikeRepository,
+            CommentRepository commentRepository,
             FeedPostRepository feedPostRepository,
             RideLogRepository rideLogRepository,
             MeetupRepository meetupRepository,
             Environment environment,
             MarketplaceItemRepository marketplaceItemRepository,
-            NotificationRepository notificationRepository
+            NotificationRepository notificationRepository,
+            UserRepository userRepository,
+            PasswordEncoder passwordEncoder
     ) {
         this.currentUserService = currentUserService;
         this.bikeRepository = bikeRepository;
+        this.commentRepository = commentRepository;
         this.feedPostRepository = feedPostRepository;
         this.rideLogRepository = rideLogRepository;
         this.meetupRepository = meetupRepository;
         this.environment = environment;
         this.marketplaceItemRepository = marketplaceItemRepository;
         this.notificationRepository = notificationRepository;
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @GetMapping("/")
@@ -105,7 +120,15 @@ public class PageController {
         User user = currentUserService.getRequiredUser(authentication);
         setupBaseModel(model, user, "feed");
         model.addAttribute("feedPostForm", new FeedPostForm());
-        model.addAttribute("posts", feedPostRepository.findByOwnerOrderByCreatedAtDesc(user));
+
+        List<FeedPost> posts = feedPostRepository.findAllByOrderByCreatedAtDesc();
+        model.addAttribute("posts", posts);
+
+        Map<Long, List<Comment>> commentsByPost = new HashMap<>();
+        for (FeedPost post : posts) {
+            commentsByPost.put(post.getId(), commentRepository.findByPostOrderByCreatedAtAsc(post));
+        }
+        model.addAttribute("commentsByPost", commentsByPost);
         return "feed";
     }
 
@@ -137,6 +160,89 @@ public class PageController {
 
         feedPostRepository.save(post);
         redirectAttributes.addFlashAttribute("successMessage", "Ride story posted successfully.");
+        return "redirect:/feed";
+    }
+
+    @PostMapping("/feed/{id}/like")
+    public String likePost(
+            @PathVariable Long id,
+            Authentication authentication,
+            RedirectAttributes redirectAttributes
+    ) {
+        User user = currentUserService.getRequiredUser(authentication);
+        FeedPost post = feedPostRepository.findById(id).orElse(null);
+        if (post == null) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Post not found.");
+            return "redirect:/feed";
+        }
+
+        post.setLikes((post.getLikes() == null ? 0 : post.getLikes()) + 1);
+        feedPostRepository.save(post);
+
+        if (post.getOwner() != null && !post.getOwner().getId().equals(user.getId())) {
+            notificationRepository.save(new Notification("post_like", user.getFirstname() + " liked your post.", post.getOwner()));
+        }
+
+        return "redirect:/feed";
+    }
+
+    @PostMapping("/feed/{id}/share")
+    public String sharePost(
+            @PathVariable Long id,
+            Authentication authentication,
+            RedirectAttributes redirectAttributes
+    ) {
+        User user = currentUserService.getRequiredUser(authentication);
+        FeedPost post = feedPostRepository.findById(id).orElse(null);
+        if (post == null) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Post not found.");
+            return "redirect:/feed";
+        }
+
+        post.setCheers((post.getCheers() == null ? 0 : post.getCheers()) + 1);
+        feedPostRepository.save(post);
+
+        if (post.getOwner() != null && !post.getOwner().getId().equals(user.getId())) {
+            notificationRepository.save(new Notification("post_share", user.getFirstname() + " shared your post.", post.getOwner()));
+        }
+
+        return "redirect:/feed";
+    }
+
+    @PostMapping("/feed/{id}/comment")
+    public String commentPost(
+            @PathVariable Long id,
+            @RequestParam String message,
+            Authentication authentication,
+            RedirectAttributes redirectAttributes
+    ) {
+        User user = currentUserService.getRequiredUser(authentication);
+        FeedPost post = feedPostRepository.findById(id).orElse(null);
+        if (post == null) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Post not found.");
+            return "redirect:/feed";
+        }
+
+        String trimmedMessage = message == null ? "" : message.trim();
+        if (trimmedMessage.isEmpty()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Comment cannot be empty.");
+            return "redirect:/feed";
+        }
+
+        Comment comment = new Comment();
+        comment.setAuthor(user);
+        comment.setPost(post);
+        comment.setMessage(trimmedMessage);
+        comment.setCreatedAt(LocalDateTime.now());
+        commentRepository.save(comment);
+
+        post.setComments((post.getComments() == null ? 0 : post.getComments()) + 1);
+        feedPostRepository.save(post);
+
+        if (post.getOwner() != null && !post.getOwner().getId().equals(user.getId())) {
+            notificationRepository.save(new Notification("post_comment", user.getFirstname() + " commented on your post.", post.getOwner()));
+        }
+
         return "redirect:/feed";
     }
 
@@ -311,6 +417,117 @@ public class PageController {
         return "redirect:/garage";
     }
 
+    @GetMapping("/marketplace")
+    public String marketplacePage(Authentication authentication, Model model) {
+        User user = currentUserService.getRequiredUser(authentication);
+        setupBaseModel(model, user, "marketplace");
+        model.addAttribute("marketplaceItemForm", new MarketplaceItemForm());
+        model.addAttribute("items", marketplaceItemRepository.findByStatusOrderByCreatedAtDesc("available"));
+        model.addAttribute("myListedItems", marketplaceItemRepository.findBySellerOrderByCreatedAtDesc(user));
+        return "marketplace";
+    }
+
+    @PostMapping("/marketplace")
+    public String createMarketplaceItem(
+            Authentication authentication,
+            @Valid @ModelAttribute MarketplaceItemForm marketplaceItemForm,
+            BindingResult bindingResult,
+            RedirectAttributes redirectAttributes
+    ) {
+        User user = currentUserService.getRequiredUser(authentication);
+
+        if (bindingResult.hasErrors()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Please provide valid item details.");
+            return "redirect:/marketplace";
+        }
+
+        MarketplaceItem item = new MarketplaceItem();
+        item.setSeller(user);
+        item.setTitle(marketplaceItemForm.getTitle().trim());
+        item.setDescription(marketplaceItemForm.getDescription().trim());
+        item.setPrice(marketplaceItemForm.getPrice());
+        item.setCategory(marketplaceItemForm.getCategory());
+        item.setImageUrl(normalizeImageUrl(marketplaceItemForm.getImageUrl(), "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=900&q=80"));
+        item.setStatus("available");
+        item.setCreatedAt(LocalDateTime.now());
+        item.setUpdatedAt(LocalDateTime.now());
+
+        marketplaceItemRepository.save(item);
+        notificationRepository.save(new Notification("item_listed", user.getFirstname() + " listed a new item: " + item.getTitle(), user));
+
+        redirectAttributes.addFlashAttribute("successMessage", "Item listed successfully.");
+        return "redirect:/marketplace";
+    }
+
+    @GetMapping("/marketplace/{id}")
+    public String marketplaceItemDetail(
+            @PathVariable Long id,
+            Model model,
+            Authentication authentication
+    ) {
+        User user = currentUserService.getRequiredUser(authentication);
+        setupBaseModel(model, user, "marketplace");
+
+        MarketplaceItem item = marketplaceItemRepository.findById(id).orElse(null);
+        if (item == null) {
+            return "redirect:/marketplace";
+        }
+
+        model.addAttribute("item", item);
+        model.addAttribute("currentUserId", user.getId());
+        return "marketplace-item";
+    }
+
+    @PostMapping("/marketplace/{id}/delete")
+    public String deleteMarketplaceItem(
+            @PathVariable Long id,
+            Authentication authentication,
+            RedirectAttributes redirectAttributes
+    ) {
+        User user = currentUserService.getRequiredUser(authentication);
+        MarketplaceItem item = marketplaceItemRepository.findById(id).orElse(null);
+
+        if (item == null) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Item not found.");
+            return "redirect:/marketplace";
+        }
+
+        if (item.getSeller() == null || !item.getSeller().getId().equals(user.getId())) {
+            redirectAttributes.addFlashAttribute("errorMessage", "You can only remove your own listings.");
+            return "redirect:/marketplace";
+        }
+
+        marketplaceItemRepository.delete(item);
+        redirectAttributes.addFlashAttribute("successMessage", "Listing removed successfully.");
+        return "redirect:/marketplace";
+    }
+
+    @GetMapping("/notifications")
+    public String notificationsPage(Authentication authentication, Model model) {
+        User user = currentUserService.getRequiredUser(authentication);
+        setupBaseModel(model, user, "notifications");
+
+        List<Notification> notifications = notificationRepository.findByRecipientOrderByCreatedAtDesc(user);
+        long unreadCount = notificationRepository.countByRecipientAndIsReadFalse(user);
+
+        model.addAttribute("notifications", notifications);
+        model.addAttribute("unreadCount", unreadCount);
+        return "notifications";
+    }
+
+    @PostMapping("/notifications/{id}/mark-read")
+    public String markNotificationAsRead(
+            @PathVariable Long id,
+            RedirectAttributes redirectAttributes
+    ) {
+        Notification notification = notificationRepository.findById(id).orElse(null);
+        if (notification != null) {
+            notification.setIsRead(true);
+            notificationRepository.save(notification);
+        }
+        return "redirect:/notifications";
+    }
+
     private void setupBaseModel(Model model, User user, String activeTab) {
         if (!environment.matchesProfiles("supabase")) {
             ensureDemoData(user);
@@ -350,6 +567,8 @@ public class PageController {
     }
 
     private void ensureDemoData(User user) {
+        ensureSharedFeedData();
+
         if (bikeRepository.findByOwnerOrderByActiveDescDisplayNameAsc(user).isEmpty()) {
             Bike bikeOne = new Bike();
             bikeOne.setOwner(user);
@@ -492,94 +711,62 @@ public class PageController {
         }
     }
 
-    @GetMapping("/marketplace")
-    public String marketplacePage(Authentication authentication, Model model) {
-        User user = currentUserService.getRequiredUser(authentication);
-        setupBaseModel(model, user, "marketplace");
-        model.addAttribute("marketplaceItemForm", new MarketplaceItemForm());
-        model.addAttribute("items", marketplaceItemRepository.findByStatusOrderByCreatedAtDesc("available"));
-        return "marketplace";
+    private void ensureSharedFeedData() {
+        ensureSharedFeedUserAndPost(
+                "alex.rider@motomeet.local",
+                "Alex",
+                "Rider",
+                "Canyon Run at Dawn",
+                "Glendora -> Angeles Crest -> Mt. Wilson",
+                "This sunrise run had perfect grip and zero traffic.",
+                "Triumph Street Triple",
+                "https://images.unsplash.com/photo-1471478331149-c72f17e33c73?auto=format&fit=crop&w=1200&q=80"
+        );
+
+        ensureSharedFeedUserAndPost(
+                "sam.tourer@motomeet.local",
+                "Sam",
+                "Tourer",
+                "Weekend Pacific Coast Ride",
+                "Santa Monica -> Malibu -> Ventura",
+                "Coastal weather, good coffee, and a long open road.",
+                "BMW R 1250 GS",
+                "https://images.unsplash.com/photo-1511882150382-421056c89033?auto=format&fit=crop&w=1200&q=80"
+        );
     }
 
-    @PostMapping("/marketplace")
-    public String createMarketplaceItem(
-            Authentication authentication,
-            @Valid @ModelAttribute MarketplaceItemForm marketplaceItemForm,
-            BindingResult bindingResult,
-            RedirectAttributes redirectAttributes
+    private void ensureSharedFeedUserAndPost(
+            String email,
+            String firstname,
+            String lastname,
+            String storyTitle,
+            String route,
+            String story,
+            String bikeName,
+            String imageUrl
     ) {
-        User user = currentUserService.getRequiredUser(authentication);
+        User demoUser = userRepository.findByEmail(email).orElseGet(() -> {
+            User created = new User();
+            created.setEmail(email);
+            created.setFirstname(firstname);
+            created.setLastname(lastname);
+            created.setPassword(passwordEncoder.encode("Password123!"));
+            return userRepository.save(created);
+        });
 
-        if (bindingResult.hasErrors()) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Please provide valid item details.");
-            return "redirect:/marketplace";
+        if (feedPostRepository.findByOwnerOrderByCreatedAtDesc(demoUser).isEmpty()) {
+            FeedPost post = new FeedPost();
+            post.setOwner(demoUser);
+            post.setStory(storyTitle + ": " + story + " Route: " + route + ".");
+            post.setBikeName(bikeName);
+            post.setImageLeftUrl(imageUrl);
+            post.setImageRightUrl(imageUrl);
+            post.setLikes(24);
+            post.setCheers(7);
+            post.setComments(3);
+            post.setCreatedAt(LocalDateTime.now().minusHours(3));
+            feedPostRepository.save(post);
         }
-
-        MarketplaceItem item = new MarketplaceItem();
-        item.setSeller(user);
-        item.setTitle(marketplaceItemForm.getTitle().trim());
-        item.setDescription(marketplaceItemForm.getDescription().trim());
-        item.setPrice(marketplaceItemForm.getPrice());
-        item.setCategory(marketplaceItemForm.getCategory());
-        item.setImageUrl(normalizeImageUrl(marketplaceItemForm.getImageUrl(), 
-            "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=900&q=80"));
-        item.setStatus("available");
-        item.setCreatedAt(LocalDateTime.now());
-        item.setUpdatedAt(LocalDateTime.now());
-
-        marketplaceItemRepository.save(item);
-
-        // Create notification for other users
-        Notification notification = new Notification("item_listed", 
-            user.getFirstname() + " listed a new item: " + item.getTitle(), user);
-        notificationRepository.save(notification);
-
-        redirectAttributes.addFlashAttribute("successMessage", "Item listed successfully.");
-        return "redirect:/marketplace";
-    }
-
-    @GetMapping("/marketplace/{id}")
-    public String marketplaceItemDetail(
-            @PathVariable Long id,
-            Model model,
-            Authentication authentication
-    ) {
-        User user = currentUserService.getRequiredUser(authentication);
-        setupBaseModel(model, user, "marketplace");
-        
-        MarketplaceItem item = marketplaceItemRepository.findById(id).orElse(null);
-        if (item == null) {
-            return "redirect:/marketplace";
-        }
-        
-        model.addAttribute("item", item);
-        return "marketplace-detail";
-    }
-
-    @GetMapping("/notifications")
-    public String notificationsPage(Authentication authentication, Model model) {
-        User user = currentUserService.getRequiredUser(authentication);
-        setupBaseModel(model, user, "notifications");
-        
-        List<Notification> notifications = notificationRepository.findByRecipientOrderByCreatedAtDesc(user);
-        long unreadCount = notificationRepository.countByRecipientAndIsReadFalse(user);
-        
-        model.addAttribute("notifications", notifications);
-        model.addAttribute("unreadCount", unreadCount);
-        return "notifications";
-    }
-
-    @PostMapping("/notifications/{id}/mark-read")
-    public String markNotificationAsRead(
-            @PathVariable Long id,
-            RedirectAttributes redirectAttributes
-    ) {
-        Notification notification = notificationRepository.findById(id).orElse(null);
-        if (notification != null) {
-            notification.setIsRead(true);
-            notificationRepository.save(notification);
-        }
-        return "redirect:/notifications";
     }
 
     private String resolveText(String value, String fallback) {
@@ -595,8 +782,6 @@ public class PageController {
         }
 
         String value = candidate.trim();
-
-        // Prevent oversized data URLs from causing SQL truncation errors.
         if (value.startsWith("data:") || value.length() > MAX_IMAGE_URL_LENGTH) {
             return fallback;
         }

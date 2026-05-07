@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${item != null ? item.title + ' - MotoMeet' : 'Item Details - MotoMeet'}">Item Details - MotoMeet</title>
+    <link rel="stylesheet" href="/css/app.css">
+    <style>
+        .item-page {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px 20px 40px;
+        }
+
+        .item-back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 18px;
+            color: #f97316;
+            text-decoration: none;
+            font-weight: 700;
+        }
+
+        .item-back-link:hover {
+            text-decoration: underline;
+        }
+
+        .item-hero {
+            display: grid;
+            grid-template-columns: 1.15fr 0.85fr;
+            gap: 24px;
+            align-items: start;
+        }
+
+        .item-gallery,
+        .item-summary {
+            background: #242739;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.18);
+        }
+
+        .item-image {
+            width: 100%;
+            height: 420px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .item-summary {
+            padding: 24px;
+        }
+
+        .item-price {
+            color: #fb923c;
+            font-size: 2.2rem;
+            font-weight: 800;
+            margin: 0 0 12px;
+        }
+
+        .item-title {
+            margin: 0 0 8px;
+            font-size: 2rem;
+            line-height: 1.1;
+        }
+
+        .item-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 16px 0 22px;
+        }
+
+        .item-chip {
+            padding: 8px 12px;
+            border-radius: 999px;
+            background: #1c1f2e;
+            color: #cbd5e1;
+            font-size: 0.92rem;
+        }
+
+        .item-section {
+            margin-top: 18px;
+            padding-top: 18px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .section-label {
+            color: #94a3b8;
+            font-size: 0.82rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 8px;
+        }
+
+        .item-description {
+            color: #e5e7eb;
+            line-height: 1.65;
+            margin: 0;
+        }
+
+        .seller-card {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            background: #1c1f2e;
+            padding: 14px;
+            border-radius: 18px;
+        }
+
+        .seller-avatar {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #fb923c, #f97316);
+            color: #10131d;
+            display: grid;
+            place-items: center;
+            font-weight: 900;
+            flex: 0 0 auto;
+        }
+
+        .seller-name {
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .seller-email {
+            color: #94a3b8;
+            margin: 2px 0 0;
+            font-size: 0.95rem;
+        }
+
+        .item-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 22px;
+        }
+
+        .item-actions .primary-btn,
+        .item-actions .secondary-btn {
+            flex: 1;
+            text-align: center;
+            justify-content: center;
+        }
+
+        @media (max-width: 960px) {
+            .item-hero {
+                grid-template-columns: 1fr;
+            }
+
+            .item-image {
+                height: 320px;
+            }
+        }
+    </style>
+</head>
+<body>
+<header class="topbar">
+    <div class="brand-wrap">
+        <span class="brand-icon">MM</span>
+        <div class="brand">MOTOMEET</div>
+    </div>
+    <nav>
+        <a class="nav-item" href="/feed">Feed</a>
+        <a class="nav-item" href="/rides">Rides</a>
+        <a class="nav-item" href="/meetups">Meetups</a>
+        <a class="nav-item" href="/garage">Garage</a>
+        <a class="nav-item active" href="/marketplace">Marketplace</a>
+    </nav>
+    <div class="top-actions">
+        <a class="top-action-link" href="/notifications" aria-label="Open notifications">
+            <span class="notif-icon">🔔</span>
+            <span class="notif-badge" th:if="${unreadCount > 0}" th:text="${unreadCount}">3</span>
+        </a>
+        <a class="profile-link" href="/profile" aria-label="Open profile">
+            <div class="avatar-pill" th:text="${avatarInitials}">JB</div>
+        </a>
+        <form action="/logout" method="post"><button class="ghost-btn" type="submit">Logout</button></form>
+    </div>
+</header>
+
+<main class="item-page">
+    <a href="/marketplace" class="item-back-link">← Back to Marketplace</a>
+
+    <div class="item-hero" th:if="${item != null}">
+        <section class="item-gallery">
+            <img th:src="${item.imageUrl}" alt="Item image" class="item-image">
+        </section>
+
+        <section class="item-summary">
+            <div class="item-price" th:text="${'PHP ' + #numbers.formatDecimal(item.price, 1, 0)}">PHP 0</div>
+            <h1 class="item-title" th:text="${item.title}">Item title</h1>
+            <p class="soft" th:text="${item.category}">Category</p>
+
+            <div class="item-meta">
+                <span class="item-chip" th:text="${item.status}">available</span>
+                <span class="item-chip" th:text="${#temporals.format(item.createdAt, 'MMM dd, yyyy')}">May 07, 2026</span>
+            </div>
+
+            <div class="item-section">
+                <div class="section-label">Description</div>
+                <p class="item-description" th:text="${item.description}">Item description</p>
+            </div>
+
+            <div class="item-section">
+                <div class="section-label">Seller</div>
+                <div class="seller-card" th:if="${item.seller != null}">
+                    <div class="seller-avatar" th:text="${item.seller.firstname.substring(0, 1) + item.seller.lastname.substring(0, 1)}">JB</div>
+                    <div>
+                        <p class="seller-name" th:text="${item.seller.firstname + ' ' + item.seller.lastname}">Seller Name</p>
+                        <p class="seller-email" th:text="${item.seller.email}">seller@email.com</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="item-actions">
+                <a href="/marketplace" class="secondary-btn">Browse More</a>
+                <a href="/notifications" class="primary-btn">Check Notifications</a>
+            </div>
+
+            <div class="item-section" th:if="${currentUserId != null and item.seller != null and currentUserId == item.seller.id}">
+                <div class="section-label">Manage Listing</div>
+                <form method="post" th:action="@{/marketplace/{id}/delete(id=${item.id})}">
+                    <button type="submit" class="secondary-btn" style="width: 100%;">Remove Listing</button>
+                </form>
+            </div>
+        </section>
+    </div>
+
+    <div th:if="${item == null}" class="empty-state">
+        <p>Item not found.</p>
+        <a href="/marketplace" class="primary-btn">Back to Marketplace</a>
+    </div>
+</main>
+
+<script src="/js/app.js"></script>
+</body>
+</html>
