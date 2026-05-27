@@ -9,6 +9,7 @@ public class FeedPostForm {
     private String story;
 
     private String bikeName;
+    private boolean imageEnabled = false;
     private String imageLeftUrl;
     private String imageRightUrl;
 
@@ -26,6 +27,14 @@ public class FeedPostForm {
 
     public void setBikeName(String bikeName) {
         this.bikeName = bikeName;
+    }
+
+    public boolean isImageEnabled() {
+        return imageEnabled;
+    }
+
+    public void setImageEnabled(boolean imageEnabled) {
+        this.imageEnabled = imageEnabled;
     }
 
     public String getImageLeftUrl() {

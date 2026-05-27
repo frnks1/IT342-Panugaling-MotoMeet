@@ -1,0 +1,175 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MotoMeet | Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<header class="topbar">
+    <div class="brand-wrap">
+        <span class="brand-icon">MM</span>
+        <div class="brand">MOTOMEET</div>
+    </div>
+    <nav>
+        <a class="nav-item active" href="/admin">Admin</a>
+    </nav>
+    <div class="top-actions">
+        <div class="admin-badge">ADMIN</div>
+        <div class="avatar-pill">MA</div>
+        <form action="/logout" method="post"><button class="ghost-btn" type="submit">Logout</button></form>
+    </div>
+</header>
+
+<main class="app-grid admin-shell">
+    <section class="content-col full">
+        
+        <div class="admin-hero wire">
+            <div>
+                <p class="eyebrow">Admin dashboard</p>
+                <h1>Moderation and platform control</h1>
+                <p class="soft">Same MotoMeet theme, but only for admin tasks like managing users and roles.</p>
+            </div>
+            <div class="admin-hero-meta">
+                <div><strong>8</strong><span>Users</span></div>
+            </div>
+        </div>
+
+        <div class="admin-grid">
+            <article class="admin-card wire">
+                <div class="title-row compact">
+                    <h2>Users</h2>
+                    <span class="chip small">8 total</span>
+                </div>
+                <div class="admin-table-wrap">
+                    <table class="admin-table">
+                        <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Action</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr>
+                            <td>Franklyn Panugaling</td>
+                            <td>frank@cit.edu</td>
+                            <td>
+                                <span class="role-pill"></span>
+                            </td>
+                            <td>
+                                <form action="/admin/users/4/role/ADMIN" method="post">
+                                    <button class="secondary-btn" type="submit">Make admin</button>
+                                </form>
+                                
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Franklyn Panugaling</td>
+                            <td>franklyn@cit.com</td>
+                            <td>
+                                <span class="role-pill"></span>
+                            </td>
+                            <td>
+                                <form action="/admin/users/5/role/ADMIN" method="post">
+                                    <button class="secondary-btn" type="submit">Make admin</button>
+                                </form>
+                                
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>andre sarraga</td>
+                            <td>andre@gmail.com</td>
+                            <td>
+                                <span class="role-pill"></span>
+                            </td>
+                            <td>
+                                <form action="/admin/users/6/role/ADMIN" method="post">
+                                    <button class="secondary-btn" type="submit">Make admin</button>
+                                </form>
+                                
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>John Kennedy</td>
+                            <td>john@gmail.com</td>
+                            <td>
+                                <span class="role-pill"></span>
+                            </td>
+                            <td>
+                                <form action="/admin/users/7/role/ADMIN" method="post">
+                                    <button class="secondary-btn" type="submit">Make admin</button>
+                                </form>
+                                
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Test Supabase</td>
+                            <td>test.supabase.1779806605@example.com</td>
+                            <td>
+                                <span class="role-pill"></span>
+                            </td>
+                            <td>
+                                <form action="/admin/users/8/role/ADMIN" method="post">
+                                    <button class="secondary-btn" type="submit">Make admin</button>
+                                </form>
+                                
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Rick Grimes</td>
+                            <td>walking@dead.com</td>
+                            <td>
+                                <span class="role-pill"></span>
+                            </td>
+                            <td>
+                                <form action="/admin/users/9/role/ADMIN" method="post">
+                                    <button class="secondary-btn" type="submit">Make admin</button>
+                                </form>
+                                
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Feb Barwado</td>
+                            <td>feb@barwado.com</td>
+                            <td>
+                                <span class="role-pill"></span>
+                            </td>
+                            <td>
+                                <form action="/admin/users/10/role/ADMIN" method="post">
+                                    <button class="secondary-btn" type="submit">Make admin</button>
+                                </form>
+                                
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>MotoMeet Admin</td>
+                            <td>admin@motomeet.com</td>
+                            <td>
+                                <span class="role-pill">ADMIN</span>
+                            </td>
+                            <td>
+                                
+                                <form action="/admin/users/11/role/USER" method="post">
+                                    <button class="secondary-btn" type="submit">Make user</button>
+                                </form>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </article>
+
+            <!-- Admin only focuses on user management. Other content panels removed to prevent admin content actions. -->
+        </div>
+    </section>
+</main>
+<script src="/js/app.js"></script>
+</body>
+</html>
+

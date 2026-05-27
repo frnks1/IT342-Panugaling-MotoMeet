@@ -8,4 +8,5 @@ import java.util.List;
 
 public interface MeetupRepository extends JpaRepository<Meetup, Long> {
     List<Meetup> findByOwnerOrderByMeetupDateAscMeetupTimeAsc(User owner);
+    List<Meetup> findAllByOrderByMeetupDateAscMeetupTimeAsc();
 }

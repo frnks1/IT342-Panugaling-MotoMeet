@@ -12,6 +12,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.motomeet.mobile.R
+import com.motomeet.mobile.data.network.TokenManager
 import com.motomeet.mobile.ui.main.MainActivity
 import kotlinx.coroutines.launch
 
@@ -45,6 +46,10 @@ class LoginActivity : AppCompatActivity() {
                             btnLogin.text = "SIGNING IN..."
                         }
                         is AuthState.Success -> {
+                            // Fix: Handle nullable token safely to avoid argument type mismatch
+                            state.token?.let {
+                                TokenManager.getInstance(this@LoginActivity).saveToken(it)
+                            }
                             Toast.makeText(this@LoginActivity, state.message, Toast.LENGTH_SHORT).show()
                             startActivity(Intent(this@LoginActivity, MainActivity::class.java))
                             finish()

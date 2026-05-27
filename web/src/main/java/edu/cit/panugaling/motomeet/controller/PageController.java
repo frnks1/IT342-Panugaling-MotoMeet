@@ -6,6 +6,8 @@ import edu.cit.panugaling.motomeet.dto.MarketplaceItemForm;
 import edu.cit.panugaling.motomeet.dto.MeetupForm;
 import edu.cit.panugaling.motomeet.dto.RideForm;
 import edu.cit.panugaling.motomeet.model.Bike;
+import edu.cit.panugaling.motomeet.model.ChatMessage;
+import edu.cit.panugaling.motomeet.model.ChatThread;
 import edu.cit.panugaling.motomeet.model.Comment;
 import edu.cit.panugaling.motomeet.model.FeedPost;
 import edu.cit.panugaling.motomeet.model.MarketplaceItem;
@@ -14,6 +16,8 @@ import edu.cit.panugaling.motomeet.model.Notification;
 import edu.cit.panugaling.motomeet.model.RideLog;
 import edu.cit.panugaling.motomeet.model.User;
 import edu.cit.panugaling.motomeet.repository.BikeRepository;
+import edu.cit.panugaling.motomeet.repository.ChatMessageRepository;
+import edu.cit.panugaling.motomeet.repository.ChatThreadRepository;
 import edu.cit.panugaling.motomeet.repository.CommentRepository;
 import edu.cit.panugaling.motomeet.repository.FeedPostRepository;
 import edu.cit.panugaling.motomeet.repository.MarketplaceItemRepository;
@@ -26,6 +30,8 @@ import edu.cit.panugaling.motomeet.service.CurrentUserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.core.env.Environment;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -37,12 +43,15 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -54,6 +63,8 @@ public class PageController {
 
     private final CurrentUserService currentUserService;
     private final BikeRepository bikeRepository;
+    private final ChatThreadRepository chatThreadRepository;
+    private final ChatMessageRepository chatMessageRepository;
     private final CommentRepository commentRepository;
     private final FeedPostRepository feedPostRepository;
     private final RideLogRepository rideLogRepository;
@@ -67,6 +78,8 @@ public class PageController {
     public PageController(
             CurrentUserService currentUserService,
             BikeRepository bikeRepository,
+            ChatThreadRepository chatThreadRepository,
+            ChatMessageRepository chatMessageRepository,
             CommentRepository commentRepository,
             FeedPostRepository feedPostRepository,
             RideLogRepository rideLogRepository,
@@ -79,6 +92,8 @@ public class PageController {
     ) {
         this.currentUserService = currentUserService;
         this.bikeRepository = bikeRepository;
+        this.chatThreadRepository = chatThreadRepository;
+        this.chatMessageRepository = chatMessageRepository;
         this.commentRepository = commentRepository;
         this.feedPostRepository = feedPostRepository;
         this.rideLogRepository = rideLogRepository;
@@ -95,7 +110,7 @@ public class PageController {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getName())
                 && currentUserService.findUser(auth).isPresent()) {
-            return "redirect:/feed";
+            return isAdmin(auth) ? "redirect:/admin" : "redirect:/feed";
         }
         return "redirect:/login";
     }
@@ -105,7 +120,7 @@ public class PageController {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getName())
                 && currentUserService.findUser(auth).isPresent()) {
-            return "redirect:/feed";
+            return isAdmin(auth) ? "redirect:/admin" : "redirect:/feed";
         }
         return "login";
     }
@@ -151,8 +166,19 @@ public class PageController {
         post.setOwner(user);
         post.setStory(feedPostForm.getStory().trim());
         post.setBikeName(resolveText(feedPostForm.getBikeName(), activeBike != null ? activeBike.getDisplayName() : "My Bike"));
-        post.setImageLeftUrl(normalizeImageUrl(feedPostForm.getImageLeftUrl(), "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=900&q=80"));
-        post.setImageRightUrl(normalizeImageUrl(feedPostForm.getImageRightUrl(), "https://images.unsplash.com/photo-1591291621164-2c6367723315?auto=format&fit=crop&w=900&q=80"));
+        if (feedPostForm.isImageEnabled()) {
+            String left = normalizeOptionalImageUrl(feedPostForm.getImageLeftUrl());
+            String right = normalizeOptionalImageUrl(feedPostForm.getImageRightUrl());
+            if (left == null && right == null) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Image switch is on but no valid image URL provided.");
+                return "redirect:/feed";
+            }
+            post.setImageLeftUrl(left);
+            post.setImageRightUrl(right);
+        } else {
+            post.setImageLeftUrl(null);
+            post.setImageRightUrl(null);
+        }
         post.setLikes(0);
         post.setCheers(0);
         post.setComments(0);
@@ -303,7 +329,7 @@ public class PageController {
         User user = currentUserService.getRequiredUser(authentication);
         setupBaseModel(model, user, "meetups");
         model.addAttribute("meetupForm", new MeetupForm());
-        model.addAttribute("meetups", meetupRepository.findByOwnerOrderByMeetupDateAscMeetupTimeAsc(user));
+        model.addAttribute("meetups", meetupRepository.findAllByOrderByMeetupDateAscMeetupTimeAsc());
         return "meetups";
     }
 
@@ -468,14 +494,104 @@ public class PageController {
         User user = currentUserService.getRequiredUser(authentication);
         setupBaseModel(model, user, "marketplace");
 
-        MarketplaceItem item = marketplaceItemRepository.findById(id).orElse(null);
+        MarketplaceItem item = marketplaceItemRepository.findByIdWithSeller(id).orElse(null);
         if (item == null) {
             return "redirect:/marketplace";
         }
 
         model.addAttribute("item", item);
         model.addAttribute("currentUserId", user.getId());
+        model.addAttribute("currentUserName", buildUserName(user));
+        model.addAttribute("itemSellerId", item.getSeller() == null ? null : item.getSeller().getId());
+        model.addAttribute("itemSellerName", item.getSeller() == null ? "" : buildUserName(item.getSeller()));
         return "marketplace-item";
+    }
+
+    @GetMapping("/marketplace/{id}/chat")
+    @ResponseBody
+        @Transactional(readOnly = true)
+    public ResponseEntity<?> getMarketplaceChat(
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
+        User currentUser = currentUserService.getRequiredUser(authentication);
+        MarketplaceItem item = marketplaceItemRepository.findByIdWithSeller(id).orElse(null);
+
+        if (item == null || item.getSeller() == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+
+        if (item.getSeller().getId().equals(currentUser.getId())) {
+            ChatThread thread = chatThreadRepository.findTopByMarketplaceItemOrderByCreatedAtDesc(item).orElse(null);
+            if (thread == null) {
+                Map<String, Object> payload = new java.util.LinkedHashMap<>();
+                payload.put("threadId", null);
+                payload.put("itemTitle", item.getTitle());
+                payload.put("opponentId", item.getSeller().getId());
+                payload.put("opponentName", buildUserName(item.getSeller()));
+                payload.put("messages", List.of());
+                return ResponseEntity.ok(payload);
+            }
+            return ResponseEntity.ok(buildChatPayload(thread, currentUser));
+        }
+
+        ChatThread thread = chatThreadRepository.findByMarketplaceItemAndBuyerAndSeller(item, currentUser, item.getSeller()).orElse(null);
+        if (thread == null) {
+            Map<String, Object> payload = new java.util.LinkedHashMap<>();
+            payload.put("threadId", null);
+            payload.put("itemTitle", item.getTitle());
+            payload.put("opponentId", item.getSeller().getId());
+            payload.put("opponentName", buildUserName(item.getSeller()));
+            payload.put("messages", List.of());
+            return ResponseEntity.ok(payload);
+        }
+
+        return ResponseEntity.ok(buildChatPayload(thread, currentUser));
+    }
+
+    @PostMapping("/marketplace/{id}/chat/messages")
+        @Transactional
+    public ResponseEntity<?> sendMarketplaceChatMessage(
+            @PathVariable Long id,
+            @RequestParam(value = "content", required = false) String formContent,
+            RedirectAttributes redirectAttributes,
+            Authentication authentication
+    ) {
+        User currentUser = currentUserService.getRequiredUser(authentication);
+        MarketplaceItem item = marketplaceItemRepository.findById(id).orElse(null);
+
+        if (item == null || item.getSeller() == null) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Item not found.");
+            return ResponseEntity.status(HttpStatus.FOUND).header("Location", "/marketplace").build();
+        }
+
+        String content = formContent == null ? "" : formContent.trim();
+        if (content.isBlank()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Message cannot be empty.");
+            return ResponseEntity.status(HttpStatus.FOUND).header("Location", "/marketplace/" + id + "?chatOpen=1").build();
+        }
+
+        ChatThread thread;
+        if (item.getSeller().getId().equals(currentUser.getId())) {
+            thread = chatThreadRepository.findTopByMarketplaceItemOrderByCreatedAtDesc(item).orElse(null);
+            if (thread == null) {
+                redirectAttributes.addFlashAttribute("errorMessage", "No buyer conversation exists yet.");
+                return ResponseEntity.status(HttpStatus.FOUND).header("Location", "/marketplace/" + id + "?chatOpen=1").build();
+            }
+        } else {
+            thread = getOrCreateMarketplaceChatThread(item, currentUser, item.getSeller());
+        }
+
+        chatMessageRepository.save(new ChatMessage(thread, currentUser, content));
+
+        User recipient = currentUser.getId().equals(item.getSeller().getId()) ? thread.getBuyer() : item.getSeller();
+        notificationRepository.save(new Notification(
+                "chat_message",
+                buildUserName(currentUser) + " sent you a message about " + item.getTitle(),
+                recipient
+        ));
+
+        return ResponseEntity.status(HttpStatus.FOUND).header("Location", "/marketplace/" + id + "?chatOpen=1").build();
     }
 
     @PostMapping("/marketplace/{id}/delete")
@@ -562,8 +678,51 @@ public class PageController {
         model.addAttribute("activeBike", activeBike);
     }
 
+    private ChatThread getOrCreateMarketplaceChatThread(MarketplaceItem item, User buyer, User seller) {
+        return chatThreadRepository.findByMarketplaceItemAndBuyerAndSeller(item, buyer, seller)
+                .orElseGet(() -> chatThreadRepository.save(new ChatThread(item, buyer, seller)));
+    }
+
+    private Map<String, Object> buildChatPayload(ChatThread thread, User viewer) {
+        List<Map<String, Object>> messages = chatMessageRepository.findByThreadOrderByCreatedAtAsc(thread).stream()
+                .map(message -> Map.<String, Object>of(
+                        "id", message.getId(),
+                        "senderId", message.getSender().getId(),
+                        "senderName", buildUserName(message.getSender()),
+                        "content", message.getContent(),
+                        "createdAt", message.getCreatedAt().format(DateTimeFormatter.ofPattern("MMM dd, yyyy HH:mm")),
+                        "mine", message.getSender().getId().equals(viewer.getId())
+                ))
+                .toList();
+
+        User opponent = thread.getBuyer().getId().equals(viewer.getId()) ? thread.getSeller() : thread.getBuyer();
+        return Map.of(
+                "threadId", thread.getId(),
+                "itemTitle", thread.getMarketplaceItem().getTitle(),
+                "opponentId", opponent.getId(),
+                "opponentName", buildUserName(opponent),
+                "messages", messages
+        );
+    }
+
+    private String buildUserName(User user) {
+        String firstName = user.getFirstname() == null ? "" : user.getFirstname().trim();
+        String lastName = user.getLastname() == null ? "" : user.getLastname().trim();
+        String fullName = (firstName + " " + lastName).trim();
+        return fullName.isBlank() ? user.getEmail() : fullName;
+    }
+
+    public record ChatMessageRequest(String content) {
+    }
+
     private long countUnreadNotifications(User user) {
         return notificationRepository.countByRecipientAndIsReadFalse(user);
+    }
+
+    private boolean isAdmin(Authentication authentication) {
+        return currentUserService.findUser(authentication)
+                .map(user -> user.getRole() != null && user.getRole().equalsIgnoreCase("ADMIN"))
+                .orElse(false);
     }
 
     private void ensureDemoData(User user) {
@@ -784,6 +943,19 @@ public class PageController {
         String value = candidate.trim();
         if (value.startsWith("data:") || value.length() > MAX_IMAGE_URL_LENGTH) {
             return fallback;
+        }
+
+        return value;
+    }
+
+    private String normalizeOptionalImageUrl(String candidate) {
+        if (candidate == null || candidate.trim().isEmpty()) {
+            return null;
+        }
+
+        String value = candidate.trim();
+        if (value.startsWith("data:") || value.length() > MAX_IMAGE_URL_LENGTH) {
+            return null;
         }
 
         return value;

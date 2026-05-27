@@ -3,6 +3,7 @@ package edu.cit.panugaling.motomeet.config;
 import edu.cit.panugaling.motomeet.repository.UserRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -29,9 +30,16 @@ public class SecurityConfig {
     return username -> userRepository.findByEmail(username)
         .map(user -> User.withUsername(user.getEmail())
             .password(user.getPassword())
-            .roles("USER")
+            .roles(normalizeRole(user.getRole()))
             .build())
         .orElseThrow(() -> new IllegalArgumentException("Invalid email or password."));
+    }
+
+    private String normalizeRole(String role) {
+        if (role == null || role.isBlank()) {
+            return "USER";
+        }
+        return role.trim().toUpperCase();
     }
 
     @Bean
@@ -39,16 +47,23 @@ public class SecurityConfig {
     http
         .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-            .requestMatchers("/", "/login", "/register", "/h2-console/**", "/css/**", "/js/**", "/images/**").permitAll()
-                        .requestMatchers("/api/v1/auth/**").permitAll()
-                        .anyRequest().authenticated()
+                    .requestMatchers("/", "/login", "/register", "/h2-console/**", "/css/**", "/js/**", "/images/**").permitAll()
+                    .requestMatchers("/api/v1/auth/**", "/api/v1/mobile/**").permitAll()
+                    .requestMatchers("/admin/**").hasRole("ADMIN")
+                    .requestMatchers("/feed/**", "/feed", "/rides/**", "/rides", "/meetups/**", "/meetups", "/garage/**", "/garage", "/marketplace/**", "/marketplace", "/notifications/**", "/notifications", "/profile", "/profile/**").hasRole("USER")
+                    .anyRequest().authenticated()
         )
         .formLogin(form -> form
             .loginPage("/login")
             .loginProcessingUrl("/login")
             .usernameParameter("email")
             .passwordParameter("password")
-            .defaultSuccessUrl("/feed", true)
+            .successHandler((request, response, authentication) -> {
+                boolean admin = authentication.getAuthorities().stream()
+                        .map(grantedAuthority -> grantedAuthority.getAuthority())
+                        .anyMatch(authority -> authority.equals("ROLE_ADMIN"));
+                response.sendRedirect(admin ? "/admin" : "/feed");
+            })
             .failureUrl("/login?error=true")
             .permitAll()
         )

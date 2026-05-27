@@ -27,6 +27,9 @@ public class User {
     @Column(nullable = false)
     private String lastname;
 
+    @Column(nullable = true)
+    private String role = "USER";
+
     // IMPORTANT: You need these manual methods for the table to be created
     public User() {}
 
@@ -40,4 +43,13 @@ public class User {
     public void setFirstname(String firstname) { this.firstname = firstname; }
     public String getLastname() { return lastname; }
     public void setLastname(String lastname) { this.lastname = lastname; }
+    public String getRole() { return role; }
+    public void setRole(String role) { this.role = role; }
+
+    @PrePersist
+    public void applyDefaultRole() {
+        if (role == null || role.isBlank()) {
+            role = "USER";
+        }
+    }
 }

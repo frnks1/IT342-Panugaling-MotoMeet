@@ -142,7 +142,7 @@
                 <div class="seller-info">
                     <div class="seller-name" th:text="${item.seller.firstname + ' ' + item.seller.lastname}"></div>
                     <div class="detail-label">Seller</div>
-                    <button class="contact-btn" onclick="alert('Contact seller: ' + document.querySelector('.seller-name').textContent)">Contact Seller</button>
+                    <a class="contact-btn" th:href="@{/marketplace/{id}(id=${item.id})} + '?chatOpen=1'" style="display:inline-block;text-align:center;text-decoration:none;">Chat with Seller</a>
                 </div>
             </div>
         </div>

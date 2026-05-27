@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MotoMeet | Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<header class="topbar">
+    <div class="brand-wrap">
+        <span class="brand-icon">MM</span>
+        <div class="brand">MOTOMEET</div>
+    </div>
+    <nav>
+        <a class="nav-item active" href="/admin">Admin</a>
+    </nav>
+    <div class="top-actions">
+        <div class="admin-badge">ADMIN</div>
+        <div class="avatar-pill" th:text="${adminInitials}">AD</div>
+        <form action="/logout" method="post"><button class="ghost-btn" type="submit">Logout</button></form>
+    </div>
+</header>
+
+<main class="app-grid admin-shell">
+    <section class="content-col full">
+        <div class="flash success" th:if="${successMessage}" th:text="${successMessage}"></div>
+        <div class="admin-hero wire">
+            <div>
+                <p class="eyebrow">Admin dashboard</p>
+                <h1>Moderation and platform control</h1>
+                <p class="soft">Same MotoMeet theme, different tools for managing users, posts, rides, meetups, and marketplace content.</p>
+            </div>
+            <div class="admin-hero-meta">
+                <div><strong th:text="${userCount}">0</strong><span>Users</span></div>
+                <div><strong th:text="${postCount}">0</strong><span>Posts</span></div>
+                <div><strong th:text="${rideCount}">0</strong><span>Rides</span></div>
+                <div><strong th:text="${meetupCount}">0</strong><span>Meetups</span></div>
+                <div>
+                    <form action="/admin/cleanup-images" method="post">
+                        <button class="secondary-btn" type="submit">Cleanup placeholder images</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="admin-grid">
+            <article class="admin-card wire">
+                <div class="title-row compact">
+                    <h2>Users</h2>
+                    <span class="chip small" th:text="${userCount + ' total'}">0 total</span>
+                </div>
+                <div class="admin-table-wrap">
+                    <table class="admin-table">
+                        <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Action</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="user : ${users}">
+                            <td th:text="${user.firstname + ' ' + user.lastname}">User Name</td>
+                            <td th:text="${user.email}">user@example.com</td>
+                            <td>
+                                <span class="role-pill" th:text="${user.role}">USER</span>
+                            </td>
+                            <td>
+                                <form th:if="${user.role != 'ADMIN'}" th:action="@{/admin/users/{id}/role/ADMIN(id=${user.id})}" method="post">
+                                    <button class="secondary-btn" type="submit">Make admin</button>
+                                </form>
+                                <form th:if="${user.role == 'ADMIN'}" th:action="@{/admin/users/{id}/role/USER(id=${user.id})}" method="post">
+                                    <button class="secondary-btn" type="submit">Make user</button>
+                                </form>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </article>
+
+            <article class="admin-card wire">
+                <div class="title-row compact">
+                    <h2>Feed Posts</h2>
+                    <span class="chip small" th:text="${postCount + ' total'}">0 total</span>
+                </div>
+                <div class="admin-list">
+                    <div class="admin-row" th:each="post : ${feedPosts}">
+                        <div>
+                            <strong th:text="${post.bikeName}">Bike</strong>
+                            <p class="soft" th:text="${post.story}">Story</p>
+                        </div>
+                        <form th:action="@{/admin/feed/{id}/delete(id=${post.id})}" method="post">
+                            <button class="secondary-btn danger" type="submit">Delete</button>
+                        </form>
+                    </div>
+                </div>
+            </article>
+
+            <article class="admin-card wire">
+                <div class="title-row compact">
+                    <h2>Rides</h2>
+                    <span class="chip small" th:text="${rideCount + ' total'}">0 total</span>
+                </div>
+                <div class="admin-list">
+                    <div class="admin-row" th:each="ride : ${rides}">
+                        <div>
+                            <strong th:text="${ride.title}">Ride title</strong>
+                            <p class="soft" th:text="${ride.route}">Route</p>
+                        </div>
+                        <form th:action="@{/admin/rides/{id}/delete(id=${ride.id})}" method="post">
+                            <button class="secondary-btn danger" type="submit">Delete</button>
+                        </form>
+                    </div>
+                </div>
+            </article>
+
+            <article class="admin-card wire">
+                <div class="title-row compact">
+                    <h2>Meetups</h2>
+                    <span class="chip small" th:text="${meetupCount + ' total'}">0 total</span>
+                </div>
+                <div class="admin-list">
+                    <div class="admin-row" th:each="meetup : ${meetups}">
+                        <div>
+                            <strong th:text="${meetup.title}">Meetup title</strong>
+                            <p class="soft" th:text="${meetup.location}">Location</p>
+                        </div>
+                        <form th:action="@{/admin/meetups/{id}/delete(id=${meetup.id})}" method="post">
+                            <button class="secondary-btn danger" type="submit">Delete</button>
+                        </form>
+                    </div>
+                </div>
+            </article>
+
+            <article class="admin-card wire full-span">
+                <div class="title-row compact">
+                    <h2>Marketplace</h2>
+                    <span class="chip small" th:text="${marketplaceCount + ' total'}">0 total</span>
+                </div>
+                <div class="admin-list">
+                    <div class="admin-row" th:each="item : ${marketplaceItems}">
+                        <div>
+                            <strong th:text="${item.title}">Listing title</strong>
+                            <p class="soft" th:text="${item.category + ' • ' + item.status}">Category</p>
+                        </div>
+                        <form th:action="@{/admin/marketplace/{id}/delete(id=${item.id})}" method="post">
+                            <button class="secondary-btn danger" type="submit">Delete</button>
+                        </form>
+                    </div>
+                </div>
+            </article>
+        </div>
+    </section>
+</main>
+<script src="/js/app.js"></script>
+</body>
+</html>

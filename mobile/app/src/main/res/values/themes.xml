@@ -1,6 +1,6 @@
 <resources>
     <!-- Base application theme. -->
-    <style name="Theme.MotoMeet" parent="Theme.AppCompat.DayNight.NoActionBar">
+    <style name="Theme.MotoMeet" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <!-- Primary brand color. -->
         <item name="colorPrimary">@color/accent</item>
         <item name="colorPrimaryDark">@color/bg_main</item>
@@ -10,7 +10,36 @@
         <item name="android:windowBackground">@color/bg_main</item>
         <item name="android:textColorPrimary">@color/text_main</item>
         <item name="android:textColorSecondary">@color/text_soft</item>
+
+        <!-- Default EditText Style -->
         <item name="editTextStyle">@style/MotoMeetEditText</item>
+
+        <!-- Material Dialog Theme -->
+        <item name="materialAlertDialogTheme">@style/MotoMeetDialog</item>
+        <item name="android:dialogTheme">@style/MotoMeetDialog</item>
+        <item name="android:alertDialogTheme">@style/MotoMeetDialog</item>
+    </style>
+
+    <!-- Force Dark Dialog Theme -->
+    <style name="MotoMeetDialog" parent="Theme.MaterialComponents.Dialog.Alert">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:background">@color/bg_panel</item>
+        <item name="colorSurface">@color/bg_panel</item>
+        <item name="android:textColorPrimary">@color/text_main</item>
+        <item name="android:textColorSecondary">@color/text_soft</item>
+        <item name="colorPrimary">@color/accent</item>
+        <item name="colorAccent">@color/accent</item>
+
+        <!-- Background color for the dialog area -->
+        <item name="android:colorBackground">@color/bg_panel</item>
+
+        <!-- Customize button colors -->
+        <item name="buttonBarPositiveButtonStyle">@style/MotoMeetDialogButton</item>
+        <item name="buttonBarNegativeButtonStyle">@style/MotoMeetDialogButton</item>
+    </style>
+
+    <style name="MotoMeetDialogButton" parent="Widget.MaterialComponents.Button.TextButton">
+        <item name="android:textColor">@color/accent</item>
     </style>
 
     <style name="MotoMeetEditText" parent="Widget.AppCompat.EditText">
@@ -18,5 +47,18 @@
         <item name="android:padding">12dp</item>
         <item name="android:textColor">@color/text_main</item>
         <item name="android:textColorHint">@color/text_soft</item>
+    </style>
+
+    <!-- Modern Input Style for TextInputLayout -->
+    <style name="MotoMeetInputLayout" parent="Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+        <item name="boxStrokeColor">@color/accent</item>
+        <item name="hintTextColor">@color/accent</item>
+        <item name="android:textColorHint">@color/text_soft</item>
+        <item name="boxBackgroundColor">@color/bg_input</item>
+        <item name="android:textColor">@color/text_main</item>
+    </style>
+
+    <style name="CircleImage">
+        <item name="cornerSize">50%</item>
     </style>
 </resources>

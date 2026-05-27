@@ -22,12 +22,10 @@ public class FeedPost {
     @Column(nullable = false)
     private String bikeName;
 
-    @NotBlank
-    @Column(nullable = false)
+    @Column(length = 255)
     private String imageLeftUrl;
 
-    @NotBlank
-    @Column(nullable = false)
+    @Column(length = 255)
     private String imageRightUrl;
 
     @NotNull

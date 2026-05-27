@@ -93,6 +93,16 @@ nav {
     gap: 12px;
 }
 
+.admin-badge {
+    padding: 10px 14px;
+    border-radius: 999px;
+    background: rgba(255, 122, 23, 0.18);
+    color: var(--accent);
+    border: 1px solid rgba(255, 122, 23, 0.35);
+    font-weight: 800;
+    letter-spacing: 0.08em;
+}
+
 .top-action-link {
     position: relative;
     display: inline-flex;
@@ -198,6 +208,156 @@ nav {
     display: grid;
     grid-template-columns: 320px 1fr;
     gap: 24px;
+}
+
+.admin-shell {
+    padding-top: 30px;
+}
+
+.admin-hero {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 24px;
+    margin-bottom: 24px;
+    border-radius: var(--radius);
+    background: linear-gradient(135deg, rgba(255, 122, 23, 0.12), rgba(36, 40, 57, 0.96));
+    border: 1px solid var(--line);
+}
+
+.admin-hero h1 {
+    margin: 6px 0 10px;
+    font-family: "Bebas Neue", sans-serif;
+    font-size: clamp(2.4rem, 4vw, 4rem);
+    letter-spacing: 0.06em;
+}
+
+.eyebrow {
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--accent);
+    font-weight: 800;
+    font-size: 0.8rem;
+}
+
+.admin-hero-meta {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(72px, 1fr));
+    gap: 12px;
+    min-width: min(540px, 100%);
+}
+
+.admin-hero-meta div,
+.admin-card {
+    background: rgba(35, 38, 52, 0.92);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+}
+
+.admin-hero-meta div {
+    padding: 16px;
+}
+
+.admin-hero-meta strong {
+    display: block;
+    font-size: 1.6rem;
+}
+
+.admin-hero-meta span {
+    color: var(--text-soft);
+    font-size: 0.86rem;
+}
+
+.admin-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.admin-card {
+    padding: 18px;
+}
+
+.admin-card.full-span {
+    grid-column: 1 / -1;
+}
+
+.title-row.compact {
+    margin-bottom: 14px;
+}
+
+.admin-table-wrap {
+    overflow-x: auto;
+}
+
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.admin-table th,
+.admin-table td {
+    padding: 12px 10px;
+    border-bottom: 1px solid var(--line);
+    text-align: left;
+    vertical-align: top;
+}
+
+.admin-table th {
+    color: var(--text-soft);
+    font-size: 0.84rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.admin-list {
+    display: grid;
+    gap: 12px;
+}
+
+.admin-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--line);
+}
+
+.admin-row:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+}
+
+.role-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 72px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: rgba(255, 122, 23, 0.16);
+    color: var(--accent);
+    font-weight: 800;
+    font-size: 0.78rem;
+}
+
+.secondary-btn.danger {
+    border-color: rgba(255, 96, 123, 0.35);
+    color: var(--danger);
+}
+
+.secondary-btn {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 10px 16px;
+    background: #242839;
+    color: var(--text-main);
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
 }
 
 .sidebar-card,

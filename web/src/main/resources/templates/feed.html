@@ -43,10 +43,6 @@
             <p class="soft" th:text="${username}">@rider.name</p>
             <p class="chip" th:if="${activeBike != null}" th:text="${activeBike.displayName}">Ducati Monster 937</p>
             <p class="soft">Passionate about twisties and cafe culture. Built for weekend rides.</p>
-            <div class="mini-stats">
-                <div><strong th:text="${followers}">1284</strong><span>Followers</span></div>
-                <div><strong th:text="${following}">347</strong><span>Following</span></div>
-            </div>
             <a class="side-link" href="/garage">My Garage</a>
             <a class="side-link" href="/rides">My Rides</a>
         </div>
@@ -60,14 +56,63 @@
             <div class="avatar-pill" th:text="${avatarInitials}">RD</div>
             <div class="compose-main">
                 <textarea th:field="*{story}" placeholder="What's your ride story today?" required maxlength="1000"></textarea>
-                <div class="compose-grid">
+                <div class="compose-grid" style="margin-top:12px;">
                     <input th:field="*{bikeName}" type="text" placeholder="Bike name">
-                    <input th:field="*{imageLeftUrl}" type="url" placeholder="Left image URL">
-                    <input th:field="*{imageRightUrl}" type="url" placeholder="Right image URL">
-                    <button class="primary-btn" type="submit">Post</button>
+                </div>
+                <div style="display:flex; align-items:center; gap:12px; margin-top:12px;">
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                        <input th:field="*{imageEnabled}" id="imageToggle" type="checkbox">
+                        <span>Include images</span>
+                    </label>
+                    <small class="soft">Toggle to add image URLs to this post</small>
+                </div>
+                <div class="compose-grid" id="imageInputs" style="margin-top:12px; display:none;">
+                    <input th:field="*{imageLeftUrl}" id="imageLeft" type="url" placeholder="Left image URL">
+                    <input th:field="*{imageRightUrl}" id="imageRight" type="url" placeholder="Right image URL">
+                </div>
+                <div style="margin-top:12px;">
+                    <button class="primary-btn" type="submit" style="width:100%;">Post</button>
                 </div>
             </div>
         </form>
+        <script>
+            (function(){
+                const toggle = document.getElementById('imageToggle');
+                const inputs = document.getElementById('imageInputs');
+                const left = document.getElementById('imageLeft');
+                const right = document.getElementById('imageRight');
+
+                function update() {
+                    if (toggle.checked) {
+                        inputs.style.display = '';
+                    } else {
+                        inputs.style.display = 'none';
+                        left.value = '';
+                        right.value = '';
+                    }
+                }
+                // form-level validation: require at least one image URL when enabled
+                const form = toggle && toggle.closest('form');
+                if (form) {
+                    form.addEventListener('submit', function(e){
+                        if (toggle.checked) {
+                            const l = left.value && left.value.trim().length > 0;
+                            const r = right.value && right.value.trim().length > 0;
+                            if (!l && !r) {
+                                e.preventDefault();
+                                alert('Please provide at least one valid image URL when Include images is enabled.');
+                                return false;
+                            }
+                        }
+                    });
+                }
+                if (toggle) {
+                    toggle.addEventListener('change', update);
+                    // initialize on load based on server model
+                    update();
+                }
+            })();
+        </script>
 
         <article class="post-card wire" th:each="post : ${posts}">
             <div class="post-meta rich">
@@ -83,9 +128,9 @@
                 </div>
             </div>
             <p class="post-story" th:text="${post.story}">Story content</p>
-            <div class="post-images">
-                <img th:src="${post.imageLeftUrl}" alt="Ride image left">
-                <img th:src="${post.imageRightUrl}" alt="Ride image right">
+            <div class="post-images" th:if="${post.imageLeftUrl != null or post.imageRightUrl != null}">
+                <img th:if="${post.imageLeftUrl != null}" th:src="${post.imageLeftUrl}" alt="Ride image left">
+                <img th:if="${post.imageRightUrl != null}" th:src="${post.imageRightUrl}" alt="Ride image right">
             </div>
             <div class="post-stats spread">
                 <form method="post" th:action="@{/feed/{id}/like(id=${post.id})}">

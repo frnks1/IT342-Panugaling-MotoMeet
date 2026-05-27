@@ -45,6 +45,7 @@ public class AuthController {
         user.setLastname(request.getLastname().trim());
         user.setEmail(request.getEmail().trim().toLowerCase());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setRole("USER");
         userRepository.save(user);
 
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -62,6 +63,7 @@ public class AuthController {
                     Map<String, Object> payload = new LinkedHashMap<>();
                     payload.put("message", "Login successful");
                     payload.put("user", u.getFirstname() + " " + u.getLastname());
+                    payload.put("role", u.getRole());
                     return ResponseEntity.ok(payload);
                 })
                 .orElse(ResponseEntity.status(401).body(Map.of("message", "Invalid credentials")));

@@ -13,7 +13,7 @@ import kotlinx.coroutines.launch
 sealed class AuthState {
     object Idle : AuthState()
     object Loading : AuthState()
-    data class Success(val message: String) : AuthState()
+    data class Success(val token: String?, val message: String) : AuthState()
     data class Error(val message: String) : AuthState()
 }
 
@@ -40,8 +40,10 @@ class AuthViewModel : ViewModel() {
         viewModelScope.launch {
             _loginState.value = AuthState.Loading
             val result = repository.login(LoginRequest(email, password))
-            result.onSuccess {
-                _loginState.value = AuthState.Success(it)
+            result.onSuccess { response ->
+                // Only treat it as a token if it's specifically in the 'token' field.
+                // We avoid using 'user' or 'message' as a token to prevent sending junk headers.
+                _loginState.value = AuthState.Success(response.token, response.message ?: "Login successful")
             }.onFailure {
                 _loginState.value = AuthState.Error(it.message ?: "Login failed")
             }
@@ -69,8 +71,8 @@ class AuthViewModel : ViewModel() {
         viewModelScope.launch {
             _registerState.value = AuthState.Loading
             val result = repository.register(RegisterRequest(firstname, lastname, email, password))
-            result.onSuccess {
-                _registerState.value = AuthState.Success(it)
+            result.onSuccess { response ->
+                _registerState.value = AuthState.Success(response.token, response.message ?: "Registration successful")
             }.onFailure {
                 _registerState.value = AuthState.Error(it.message ?: "Registration failed")
             }

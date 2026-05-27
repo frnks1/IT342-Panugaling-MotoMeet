@@ -146,6 +146,143 @@
             justify-content: center;
         }
 
+        .chat-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            display: grid;
+            place-items: center;
+            padding: 20px;
+        }
+
+        .chat-modal[hidden] {
+            display: none;
+        }
+
+        .chat-modal-backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(8, 10, 16, 0.72);
+            backdrop-filter: blur(6px);
+        }
+
+        .chat-panel {
+            position: relative;
+            z-index: 1;
+            width: min(760px, 100%);
+            max-height: min(86vh, 860px);
+            display: grid;
+            grid-template-rows: auto minmax(0, 1fr) auto;
+            background: linear-gradient(180deg, rgba(35, 38, 52, 0.99), rgba(23, 25, 37, 0.99));
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 28px;
+            overflow: hidden;
+            box-shadow: 0 28px 90px rgba(0, 0, 0, 0.45);
+        }
+
+        .chat-panel-header {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            align-items: flex-start;
+            padding: 20px 22px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .chat-close-btn {
+            width: 86px;
+            height: 42px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: #1c1f2e;
+            color: #e5e7eb;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .chat-messages {
+            display: grid;
+            gap: 12px;
+            padding: 18px 22px;
+            overflow-y: auto;
+            background:
+                radial-gradient(circle at 20% 0%, rgba(249, 115, 22, 0.08), transparent 30%),
+                rgba(17, 19, 28, 0.84);
+        }
+
+        .chat-empty-state {
+            padding: 18px;
+            border: 1px dashed rgba(255, 255, 255, 0.1);
+            border-radius: 18px;
+            color: #94a3b8;
+            text-align: center;
+        }
+
+        .chat-bubble {
+            max-width: min(78%, 540px);
+            padding: 12px 14px;
+            border-radius: 18px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: #232634;
+        }
+
+        .chat-bubble.mine {
+            margin-left: auto;
+            background: rgba(249, 115, 22, 0.12);
+            border-color: rgba(249, 115, 22, 0.22);
+        }
+
+        .chat-bubble-header {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 8px;
+            color: #94a3b8;
+            font-size: 0.84rem;
+        }
+
+        .chat-bubble-text {
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        .chat-form {
+            padding: 18px 22px 22px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(23, 25, 37, 0.98);
+        }
+
+        .chat-form textarea {
+            width: 100%;
+            min-height: 90px;
+            resize: none;
+            background: #141724;
+            color: #f4f5f8;
+            border: 1px solid #2e3348;
+            border-radius: 14px;
+            padding: 11px 12px;
+            font: inherit;
+        }
+
+        .chat-form-footer {
+            display: flex;
+            justify-content: space-between;
+            gap: 14px;
+            align-items: center;
+            margin-top: 12px;
+        }
+
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            border: 0;
+        }
+
         @media (max-width: 960px) {
             .item-hero {
                 grid-template-columns: 1fr;
@@ -182,10 +319,10 @@
     </div>
 </header>
 
-<main class="item-page">
+<main class="item-page" th:if="${item != null}" th:attr="data-item-id=${item.id}, data-item-title=${item.title}, data-seller-id=${item.seller != null ? item.seller.id : ''}, data-seller-name=${itemSellerName}, data-current-user-id=${currentUserId}, data-current-user-name=${currentUserName}">
     <a href="/marketplace" class="item-back-link">← Back to Marketplace</a>
 
-    <div class="item-hero" th:if="${item != null}">
+    <div class="item-hero">
         <section class="item-gallery">
             <img th:src="${item.imageUrl}" alt="Item image" class="item-image">
         </section>
@@ -218,7 +355,7 @@
 
             <div class="item-actions">
                 <a href="/marketplace" class="secondary-btn">Browse More</a>
-                <a href="/notifications" class="primary-btn">Check Notifications</a>
+                <button type="button" class="primary-btn" data-chat-open th:if="${currentUserId != null and item.seller != null}" th:text="${currentUserId != null and item.seller != null and currentUserId == item.seller.id ? 'View Chat' : 'Chat with Seller'}">Chat with Seller</button>
             </div>
 
             <div class="item-section" th:if="${currentUserId != null and item.seller != null and currentUserId == item.seller.id}">
@@ -230,12 +367,42 @@
         </section>
     </div>
 
-    <div th:if="${item == null}" class="empty-state">
-        <p>Item not found.</p>
-        <a href="/marketplace" class="primary-btn">Back to Marketplace</a>
+    <div class="chat-modal" data-chat-modal hidden>
+        <div class="chat-modal-backdrop" data-chat-close></div>
+        <section class="chat-panel" aria-label="Marketplace chat" role="dialog" aria-modal="true">
+            <header class="chat-panel-header">
+                <div>
+                    <p class="eyebrow">Marketplace Chat</p>
+                    <h2 th:text="${item.title}">Item title</h2>
+                    <p class="soft">Message <span th:text="${itemSellerName}">Seller Name</span> about this listing.</p>
+                </div>
+                <button type="button" class="chat-close-btn" aria-label="Close chat" data-chat-close>Close</button>
+            </header>
+
+            <div class="chat-messages" data-chat-messages>
+                <div class="chat-empty-state">Loading conversation...</div>
+            </div>
+
+            <form class="chat-form" data-chat-form th:action="@{/marketplace/{id}/chat/messages(id=${item.id})}" method="post">
+                <label class="sr-only" for="chat-message-input">Chat message</label>
+                <textarea id="chat-message-input" name="content" rows="3" maxlength="1000" placeholder="Write a reply..." data-chat-input></textarea>
+                <div class="chat-form-footer">
+                    <p class="soft">Replies notify the other person automatically.</p>
+                    <button type="submit" class="primary-btn" data-chat-send>Send</button>
+                </div>
+            </form>
+        </section>
     </div>
 </main>
 
+<div th:if="${item == null}" class="empty-state">
+    <p>Item not found.</p>
+    <a href="/marketplace" class="primary-btn">Back to Marketplace</a>
+</div>
+
+<script th:inline="javascript">
+    window.__CHAT_OPEN__ = /*[[${param.chatOpen != null}]]*/ false;
+</script>
 <script src="/js/app.js"></script>
 </body>
 </html>
